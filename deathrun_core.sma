@@ -1,7 +1,5 @@
 #include <amxmodx>
-#include <cstrike>
 #include <engine>
-#include <fun>
 #include <fakemeta>
 #include <hamsandwich>
 #include <xs>
@@ -16,11 +14,6 @@
 #define IsPlayer(%1) (%1 && %1 <= g_iMaxPlayers)
 
 #define WARMUP_TIME 20
-
-enum (+=100)
-{
-	TASK_RESPAWN = 100
-};
 
 enum _:Cvars
 {
@@ -290,7 +283,7 @@ public client_disconnect(id)
 //******** Commands ********//
 public Command_ChooseTeam(id)
 {
-    client_cmd(id, "menu");
+	client_cmd(id, "menu");
 	//Add custom menu
 	return PLUGIN_HANDLED;
 }
