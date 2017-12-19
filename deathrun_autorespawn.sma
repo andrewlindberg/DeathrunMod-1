@@ -24,20 +24,20 @@ enum _:sounds_struct
 	m_Respawn,
 	m_Heartbeat,
 	m_Farts
-}
+};
 
 enum FuncCBasePlayer
 {
 	HookChain:RG_PlayerSpawn_Pre,
 	HookChain:RG_PlayerKilled_Post
-}
+};
 
 new g_eSoundData[sounds_struct][64] =
 {
 	"royal/autorespawn/spawn.wav", 
 	"royal/autorespawn/heartbeat.wav", 
 	"royal/autorespawn/farts.wav"
-}
+};
 
 new g_iCurMode, g_iModeDuel;
 new g_bRoundEnd = false;
