@@ -6,7 +6,7 @@
 #include <reapi>
 
 #define PLUGIN "Deathrun: Core"
-#define VERSION "Re 1.2.0"
+#define VERSION "Re 1.2.1"
 #define AUTHOR "Mistrick"
 
 #pragma semicolon 1
@@ -79,16 +79,16 @@ public plugin_init()
 	
 	register_clcmd("chooseteam", "Command_ChooseTeam");
 	
-	RegisterHam(Ham_Use, "func_button", "Ham_UseButton_Pre", false);
+	RegisterHam(Ham_Use, "func_button", "Ham_UseButton_Pre", 0);
 	
 	RegisterHookChain(RG_ShowVGUIMenu, "ShowVGUIMenu");
-	RegisterHookChain(RG_CBasePlayer_Spawn, "CBasePlayer_Spawn_Pre", false);
-	RegisterHookChain(RG_CBasePlayer_Spawn, "CBasePlayer_Spawn_Post", true);
-	RegisterHookChain(RG_CBasePlayer_TraceAttack, "CBasePlayer_TraceAttack_Pre", false);
-	RegisterHookChain(RG_CBasePlayer_TakeDamage, "CBasePlayer_TakeDamage_Pre", false);
-	RegisterHookChain(RG_CSGameRules_FlPlayerFallDamage, "CSGameRules_FlPlayerFallDamage_Pre", false);
+	RegisterHookChain(RG_CBasePlayer_Spawn, "CBasePlayer_Spawn_Pre", 0);
+	RegisterHookChain(RG_CBasePlayer_Spawn, "CBasePlayer_Spawn_Post", 1);
+	RegisterHookChain(RG_CBasePlayer_TraceAttack, "CBasePlayer_TraceAttack_Pre", 0);
+	RegisterHookChain(RG_CBasePlayer_TakeDamage, "CBasePlayer_TakeDamage_Pre", 0);
+	RegisterHookChain(RG_CSGameRules_FlPlayerFallDamage, "CSGameRules_FlPlayerFallDamage_Pre", 0);
 		
-	register_forward(FM_ClientKill, "FM_ClientKill_Pre", false);
+	register_forward(FM_ClientKill, "FM_ClientKill_Pre", 0);
 	
 	register_touch("func_door", "weaponbox", "Engine_TouchFuncDoor");
 	
