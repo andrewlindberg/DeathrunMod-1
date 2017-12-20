@@ -130,13 +130,14 @@ public CSGameRules_RestartRound_Pre()
 		EnableHookChain(g_hCBaseData[RG_PlayerKilled_Post]);
 	}
 	
-	new iPlayers[32], pnum; 
+	new iPlayers[32], player, pnum; 
 	get_players(iPlayers, pnum, "eh", "CT");
 	for (new i = 0; i < pnum; i++)
 	{
-		if (is_user_connected(i))
+		player = iPlayers[i];
+		if (is_user_connected(player))
 		{
-			g_iRespawnCount[i] = NUM_RESPAWN;
+			g_iRespawnCount[player] = NUM_RESPAWN;
 		}
 	}
 }
