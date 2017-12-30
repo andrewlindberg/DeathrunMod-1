@@ -100,12 +100,12 @@ public CBasePlayer_Killed_Post(this, pevAttacker, iGib)
 	{
 		return HC_CONTINUE;
 	}
-
+	
 	if (get_member(this, m_iTeam) != TEAM_CT)
 	{
 		return HC_CONTINUE;
 	}
-
+	
 	ActivateIcon(this, SIcon_Show);
 	
 	if (!g_iRespawnCount[this])
