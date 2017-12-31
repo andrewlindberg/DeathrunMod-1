@@ -337,7 +337,7 @@ public ShowVGUIMenu(const index, VGUIMenu:menuType, const bitsSlots, szOldMenu[]
     return (VGUI_Menu_Team >= menuType <= VGUI_Menu_Buy_Item) ? HC_BREAK : HC_CONTINUE;
 }
 public CBasePlayer_Spawn_Pre(const this)
-{	
+{
 	g_iOldAmmoPickupBlock = get_msg_block(g_msgAmmoPickup);
 	g_iOldWeapPickupBlock = get_msg_block(g_msgWeapPickup);
 	set_msg_block(g_msgAmmoPickup, BLOCK_SET);
@@ -388,7 +388,7 @@ public CSGameRules_RestartRound_Pre()
 
 	if(!g_bWarmUp)
 	{
-		TeamBalance();	
+		TeamBalance();
 	}
 }
 TeamBalance()
