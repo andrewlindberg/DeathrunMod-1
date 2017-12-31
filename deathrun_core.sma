@@ -5,6 +5,10 @@
 #include <xs>
 #include <reapi>
 
+#if AMXX_VERSION_NUM < 183
+	#define client_disconnected client_disconnect
+#endif
+
 #define PLUGIN "Deathrun: Core"
 #define VERSION "Re 1.2.1"
 #define AUTHOR "Mistrick"
@@ -222,7 +226,7 @@ public client_putinserver(id)
 		}
 	}
 }
-public client_disconnect(id)
+public client_disconnected(id)
 {
 	if (id == g_iCurrTer)
 	{
@@ -242,7 +246,7 @@ public client_disconnect(id)
 			// In case he was sitting in a low space
 			if (get_entvar(id, var_bInDuck))
 			{
-                set_entvar(g_iCurrTer, var_bInDuck, true);
+				set_entvar(g_iCurrTer, var_bInDuck, true);
 			}
 			
 			// In case he was flying over the precipice or something else
