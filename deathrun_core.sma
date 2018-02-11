@@ -85,13 +85,13 @@ public plugin_init()
 	
 	RegisterHam(Ham_Use, "func_button", "Ham_UseButton_Pre", 0);
 	
-	RegisterHookChain(RG_ShowVGUIMenu, "ShowVGUIMenu");
+	RegisterHookChain(RG_ShowVGUIMenu, "ShowVGUIMenu_Pre", 0);
 	RegisterHookChain(RG_CBasePlayer_Spawn, "CBasePlayer_Spawn_Pre", 0);
 	RegisterHookChain(RG_CBasePlayer_Spawn, "CBasePlayer_Spawn_Post", 1);
 	RegisterHookChain(RG_CBasePlayer_TraceAttack, "CBasePlayer_TraceAttack_Pre", 0);
 	RegisterHookChain(RG_CBasePlayer_TakeDamage, "CBasePlayer_TakeDamage_Pre", 0);
 	RegisterHookChain(RG_CSGameRules_FlPlayerFallDamage, "CSGameRules_FlPlayerFallDamage_Pre", 0);
-		
+	
 	register_forward(FM_ClientKill, "FM_ClientKill_Pre", 0);
 	
 	register_touch("func_door", "weaponbox", "Engine_TouchFuncDoor");
@@ -332,7 +332,7 @@ Float:get_player_eyes_origin(id)
 	return origin;
 }
 // ******* Re GameDll *******
-public ShowVGUIMenu(const index, VGUIMenu:menuType, const bitsSlots, szOldMenu[])
+public ShowVGUIMenu_Pre(const index, VGUIMenu:menuType, const bitsSlots, szOldMenu[])
 {
     return (VGUI_Menu_Team >= menuType <= VGUI_Menu_Buy_Item) ? HC_BREAK : HC_CONTINUE;
 }
@@ -360,22 +360,28 @@ public CBasePlayer_Spawn_Post(const this)
 }
 public CBasePlayer_TraceAttack_Pre(const this, pevAttacker, Float:flDamage, Float:vecDir[3], tracehandle, bitsDamageType)
 {
-    return (flDamage < 0.0) ? HC_SUPERCEDE : HC_CONTINUE;
+	return (flDamage < 0.0) ? HC_SUPERCEDE : HC_CONTINUE;
 }
 public CBasePlayer_TakeDamage_Pre(const this, pevInflictor, pevAttacker, Float:flDamage, bitsDamageType)
 {
-    return (flDamage < 0.0) ? HC_SUPERCEDE : HC_CONTINUE;
+	if(flDamage < 0.0)
+	{
+		SetHookChainReturn(ATYPE_INTEGER, 0);
+		return HC_SUPERCEDE;
+	}
+	
+	return HC_CONTINUE;
 }
 public CSGameRules_FlPlayerFallDamage_Pre(const index)
 {
-    if (get_pcvar_num(g_eCvars[BLOCK_FALLDMG]) && index == g_iCurrTer)
-    {
-        // Remove the damage to the terrorist when falling from height
-        SetHookChainReturn(ATYPE_FLOAT, 0.0);
-        return HC_SUPERCEDE;
-    }
-    
-    return HC_CONTINUE;
+	if (get_pcvar_num(g_eCvars[BLOCK_FALLDMG]) && get_member(index, m_iTeam) == TEAM_TERRORIST)
+	{
+		// Remove the damage to the terrorist when falling from height
+		SetHookChainReturn(ATYPE_FLOAT, 0.0);
+		return HC_SUPERCEDE;
+	}
+	
+	return HC_CONTINUE;
 }
 public CSGameRules_RestartRound_Pre()
 {
@@ -385,7 +391,7 @@ public CSGameRules_RestartRound_Pre()
 		set_pcvar_num(g_eCvars[FORCERESPAWN], 0);
 		ExecuteForward(g_iForwards[FW_WARMUP], g_iReturn, 0);
 	}
-
+	
 	if(!g_bWarmUp)
 	{
 		TeamBalance();
@@ -396,7 +402,7 @@ TeamBalance()
 	new iPlayers[32], pnum; pnum = rg_get_players(iPlayers, false, true);
 	
 	if(pnum < 1 || pnum == 1 && !is_user_connected(g_iCurrTer)) return;
-
+	
 	if(is_user_connected(g_iCurrTer)) rg_set_user_team(g_iCurrTer, TEAM_CT);
 	
 	if(!is_user_connected(g_iNextTer))
@@ -427,6 +433,7 @@ TerroristCheck()
 		new players[32], pnum; get_players(players, pnum, "ae", "TERRORIST");
 		g_iCurrTer = pnum ? players[0] : 0;
 	}
+	
 	ExecuteForward(g_iForwards[FW_NEW_TERRORIST], g_iReturn, g_iCurrTer);
 }
 // ******* Fakemeta *******
