@@ -23,18 +23,20 @@ enum CancelType
  /**
  * Forward which called before duel start, warm up time
  * 
- * @param duelist_ct			Player index.
  * @param duelist_t				Player index.
+ * @param duelist_ct			Player index.
+ * @param duel_timer			pre duel timer.
  */
-forward dr_duel_prestart(duelist_ct, duelist_t);
+forward dr_duel_prestart(duelist_t, duelist_ct, duel_timer);
 
  /**
  * Forward which called when duel started
  * 
- * @param duelist_ct			Player index.
  * @param duelist_t				Player index.
+ * @param duelist_ct			Player index.
+ * @param duel_timer			end duel timer.
  */
-forward dr_duel_start(duelist_ct, duelist_t);
+forward dr_duel_start(duelist_t, duelist_ct, duel_timer);
 
  /**
  * Forward which called when duel overed

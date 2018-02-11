@@ -6,13 +6,15 @@
 #include <hamsandwich>
 #include <deathrun_modes>
 #include <xs>
+#include <reapi>
 
 #if AMXX_VERSION_NUM < 183
-#include <colorchat>
+	#include <colorchat>
+	#define client_disconnected client_disconnect
 #endif
 
 #define PLUGIN "Deathrun Mode: Duel"
-#define VERSION "1.0.3"
+#define VERSION "Re 1.0.3"
 #define AUTHOR "Mistrick"
 
 #pragma semicolon 1
@@ -43,9 +45,6 @@ enum (+=100)
 new const PREFIX[] = "^4[Duel]";
 new const SPAWNS_DIR[] = "deathrun_duel";
 
-const XO_CBASEPLAYERWEAPON = 4;
-const m_pPlayer = 41;
-
 enum _:DUEL_FORWARDS
 {
 	DUEL_PRESTART,
@@ -53,6 +52,7 @@ enum _:DUEL_FORWARDS
 	DUEL_FINISH,
 	DUEL_CANCELED
 };
+
 enum
 {
 	DUELIST_CT = 0,
@@ -77,40 +77,40 @@ new g_szSpawnsFile[128];
 new g_bSetSpawn[2];
 new g_iMinDistance;
 
-new g_iColors[2][3] = 
+new Float:g_fColors[2][3] = 
 {
-	{ 0, 0, 250 },
-	{ 250, 0, 0 }
+	{ 0.0, 0.0, 250.0 },
+	{ 250.0, 0.0, 0.0 }
 };
 
 new g_iForwards[DUEL_FORWARDS];
 new g_iReturn;
 new g_bSavedConveyorInfo;
 
-enum
-{
-	DUELTYPE_KNIFE = 0,
-	DUELTYPE_DEAGLE,
-	DUELTYPE_AWP,
-	DUELTYPE_AK47
-};
 new g_eDuelMenuItems[][] =
 {
-	"Knife",
-	"Deagle",
-	"AWP",
-	"AK47"
+    "Knife",
+    "Deagle",
+    "Usp",
+    "Glock18",
+    "AWP",
+    "Scout",
+    "Famas",
+    "AK47",
+    "M4A1",
 };
 
-enum
-{
-	TURNDUEL_DEAGLE = 0,
-	TURNDUEL_AWP,
-	TURNDUEL_AK47
-};
 new g_eDuelWeaponWithTurn[][] =
 {
-	"weapon_deagle", "weapon_awp", "weapon_ak47"
+    "weapon_knife",
+    "weapon_deagle",
+    "weapon_usp",
+    "weapon_glock18",
+    "weapon_awp",
+    "weapon_scout",
+    "weapon_famas",
+    "weapon_ak47",
+    "weapon_m4a1"
 };
 
 public plugin_init()
@@ -119,21 +119,26 @@ public plugin_init()
 	register_clcmd("say /dd", "Command_Duel");
 	register_clcmd("say /duel", "Command_Duel");
 	register_clcmd("duel_spawns", "Command_DuelSpawn", ADMIN_CFG);
-	register_clcmd("drop", "Command_Drop");
 	
-	for(new i; i < sizeof(g_eDuelWeaponWithTurn); i++)
+	for(new i = 1; i < sizeof(g_eDuelWeaponWithTurn); i++)
 	{
-		RegisterHam(Ham_Weapon_PrimaryAttack, g_eDuelWeaponWithTurn[i], "Ham_WeaponPrimaryAttack_Post", true);
+		RegisterHam(Ham_Weapon_PrimaryAttack, g_eDuelWeaponWithTurn[i], "Ham_WeaponPrimaryAttack_Post", 1);
 	}
 	
-	RegisterHam(Ham_Weapon_SecondaryAttack, "weapon_awp", "Ham_SecondaryAttack_Pre", false);
-	RegisterHam(Ham_TakeDamage, "player", "Ham_PlayerTakeDamage_Pre", false);
-	RegisterHam(Ham_Killed, "player", "Ham_PlayerKilled_Post", true);
-	register_touch("trigger_teleport", "player", "Engine_DuelTouch");
-	register_touch("trigger_push", "player", "Engine_DuelTouch");
+	RegisterHam(Ham_Weapon_SecondaryAttack, "weapon_usp", "Ham_WeaponSecondaryAttack_Pre", 0);
+	RegisterHam(Ham_Weapon_SecondaryAttack, "weapon_glock18", "Ham_WeaponSecondaryAttack_Pre", 0);
+	RegisterHam(Ham_Weapon_SecondaryAttack, "weapon_awp", "Ham_WeaponSecondaryAttack_Pre", 0);
+	RegisterHam(Ham_Weapon_SecondaryAttack, "weapon_scout", "Ham_WeaponSecondaryAttack_Pre", 0);
+	RegisterHam(Ham_Weapon_SecondaryAttack, "weapon_famas", "Ham_WeaponSecondaryAttack_Pre", 0);
 	
-	g_iForwards[DUEL_PRESTART] = CreateMultiForward("dr_duel_prestart", ET_IGNORE, FP_CELL, FP_CELL);
-	g_iForwards[DUEL_START] = CreateMultiForward("dr_duel_start", ET_IGNORE, FP_CELL, FP_CELL);
+	register_touch("trigger_push", "player", "Engine_DuelTouch");
+	register_touch("trigger_teleport", "player", "Engine_DuelTouch");
+	RegisterHookChain(RG_CBasePlayer_TakeDamage, "CBasePlayer_TakeDamage_Pre", 0);
+	RegisterHookChain(RG_CBasePlayer_Killed, "CBasePlayer_Killed_Post", 1);
+	RegisterHookChain(RG_CBasePlayer_DropPlayerItem, "CBasePlayer_DropPlayerItem_Pre", 0);
+	
+	g_iForwards[DUEL_PRESTART] = CreateMultiForward("dr_duel_prestart", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL);
+	g_iForwards[DUEL_START] = CreateMultiForward("dr_duel_start", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL);
 	g_iForwards[DUEL_FINISH] = CreateMultiForward("dr_duel_finish", ET_IGNORE, FP_CELL, FP_CELL);
 	g_iForwards[DUEL_CANCELED] = CreateMultiForward("dr_duel_canceled", ET_IGNORE, FP_CELL);
 	
@@ -231,20 +236,20 @@ GetMinDistance()
 }
 FindSpawns()
 {
-	new first_ent = find_ent_by_class(-1, "info_player_start");
-	pev(first_ent, pev_origin, g_fDuelSpawnOrigins[DUELIST_CT]);
+	new first_ent = rg_find_ent_by_class(-1, "info_player_start", true);
+	get_entvar(first_ent, var_origin, g_fDuelSpawnOrigins[DUELIST_CT]);
 	
 	new ent = first_ent, bFind;
 	new Float:distance = 1000.0;
 	
 	while(distance > 100.0 && !bFind)
 	{
-		while((ent = find_ent_by_class(ent, "info_player_start")))
+		while((ent = rg_find_ent_by_class(ent, "info_player_start", true)))
 		{
 			if(get_entity_distance(ent, first_ent) > distance)
 			{
 				bFind = true;
-				pev(ent, pev_origin, g_fDuelSpawnOrigins[DUELIST_T]);
+				get_entvar(ent, var_origin, g_fDuelSpawnOrigins[DUELIST_T]);
 				break;
 			}
 		}
@@ -259,23 +264,22 @@ FindSpawns()
 }
 GetSpawnAngles()
 {
-	new Float:fVector[3]; xs_vec_sub(g_fDuelSpawnOrigins[DUELIST_T], g_fDuelSpawnOrigins[DUELIST_CT], fVector);
-	xs_vec_normalize(fVector, fVector);
-	vector_to_angle(fVector, g_fDuelSpawnAngles[DUELIST_CT]);
-	xs_vec_mul_scalar(fVector, -1.0, fVector);
-	vector_to_angle(fVector, g_fDuelSpawnAngles[DUELIST_T]);
+	new Float:fVector[3]; 
+	{
+		xs_vec_sub(g_fDuelSpawnOrigins[DUELIST_T], g_fDuelSpawnOrigins[DUELIST_CT], fVector);
+		xs_vec_normalize(fVector, fVector);
+		vector_to_angle(fVector, g_fDuelSpawnAngles[DUELIST_CT]);
+		xs_vec_mul_scalar(fVector, -1.0, fVector);
+		vector_to_angle(fVector, g_fDuelSpawnAngles[DUELIST_T]);
+	}
 }
-public client_disconnect(id)
+public client_disconnected(id)
 {
-	if((g_bDuelStarted) && (id == g_iDuelPlayers[DUELIST_CT] || id == g_iDuelPlayers[DUELIST_T]))
+	if(g_bDuelStarted && (id == g_iDuelPlayers[DUELIST_CT] || id == g_iDuelPlayers[DUELIST_T]))
 	{
 		ResetDuel();
 		ExecuteForward(g_iForwards[DUEL_CANCELED], g_iReturn, CType_PlayerDisconneced);
 	}
-}
-public Command_Drop(id)
-{
-	return g_bDuelStarted ? PLUGIN_HANDLED : PLUGIN_CONTINUE;
 }
 public Command_DuelSpawn(id, flag)
 {
@@ -310,7 +314,7 @@ public DuelSpawnControl_Handler(id, menu, item)
 		case 0, 1:
 		{
 			g_bSetSpawn[item] = true;
-			pev(id, pev_origin, g_fDuelSpawnOrigins[item]);
+			get_entvar(id, var_origin, g_fDuelSpawnOrigins[item]);
 			if(g_bShowSpawns)
 			{
 				UpdateSpawnEnt();
@@ -348,7 +352,7 @@ public DuelSpawnControl_Handler(id, menu, item)
 CreateSpawnEnt(type)
 {
 	static szModels[][] = {"models/player/urban/urban.mdl", "models/player/arctic/arctic.mdl"};
-	new ent = create_entity("info_target");
+	new ent = rg_create_entity("info_target");
 	DispatchSpawn(ent);
 	
 	entity_set_model(ent, szModels[type]);
@@ -364,7 +368,7 @@ CreateSpawnEnt(type)
 RemoveSpawnEnt()
 {
 	new ent = -1;
-	while((ent = find_ent_by_class(ent, "duel_spawn_ent")))
+	while((ent = rg_find_ent_by_class(ent, "duel_spawn_ent")))
 	{
 		remove_entity(ent);
 	}
@@ -373,7 +377,7 @@ UpdateSpawnEnt()
 {
 	GetSpawnAngles();
 	new ent = -1;
-	while((ent = find_ent_by_class(ent, "duel_spawn_ent")))
+	while((ent = rg_find_ent_by_class(ent, "duel_spawn_ent")))
 	{
 		new type = entity_get_int(ent, EV_INT_iuser1);
 		entity_set_vector(ent, EV_VEC_origin, g_fDuelSpawnOrigins[type]);
@@ -405,7 +409,7 @@ SaveSpawns(id)
 }
 public Command_Duel(id)
 {
-	if(g_bDuelStarted || !is_user_alive(id) || cs_get_user_team(id) != CS_TEAM_CT) return PLUGIN_HANDLED;
+	if(g_bDuelStarted || !is_user_alive(id) || get_member(id, m_iTeam) != TEAM_CT) return PLUGIN_HANDLED;
 		
 	new players[32], pnum; get_players(players, pnum, "ae", "CT");
 	if(pnum > 1) return PLUGIN_HANDLED;
@@ -434,7 +438,7 @@ public DuelType_Handler(id, menu, item)
 	
 	g_iDuelPlayers[DUELIST_T] = players[0];
 	
-	if(!is_user_alive(id) || !is_user_alive(g_iDuelPlayers[DUELIST_T]) ||cs_get_user_team(id) != CS_TEAM_CT) return PLUGIN_HANDLED;
+	if(!is_user_alive(id) || !is_user_alive(g_iDuelPlayers[DUELIST_T]) || get_member(id, m_iTeam) != TEAM_CT) return PLUGIN_HANDLED;
 	
 	dr_set_mode(g_iModeDuel, 1);
 	
@@ -462,7 +466,7 @@ DuelPreStart()
 	g_iDuelTimer = PRESTART_TIME + 1;
 	Task_PreStartTimer();
 	
-	ExecuteForward(g_iForwards[DUEL_PRESTART], g_iReturn, g_iDuelPlayers[DUELIST_CT], g_iDuelPlayers[DUELIST_T]);
+	ExecuteForward(g_iForwards[DUEL_PRESTART], g_iReturn, g_iDuelPlayers[DUELIST_T], g_iDuelPlayers[DUELIST_CT], g_iDuelTimer);
 	
 	client_print_color(0, print_team_default, "%s^1 %L", PREFIX, LANG_PLAYER, "DRD_DUEL_START_TIME", PRESTART_TIME);
 }
@@ -483,27 +487,15 @@ public Task_PreStartTimer()
 
 DuelStartForward(type)
 {
-	switch(type)
-	{
-		case DUELTYPE_KNIFE:
-		{
-			give_item(g_iDuelPlayers[DUELIST_CT], "weapon_knife");
-			give_item(g_iDuelPlayers[DUELIST_T], "weapon_knife");
-		}
-		case DUELTYPE_DEAGLE, DUELTYPE_AWP, DUELTYPE_AK47:
-		{
-			StartTurnDuel(type - 1);
-		}
-	}
-	
+	StartTurnDuel(type);
 	StartDuelTimer();
-	
-	ExecuteForward(g_iForwards[DUEL_START], g_iReturn, g_iDuelPlayers[DUELIST_CT], g_iDuelPlayers[DUELIST_T]);
 }
 StartDuelTimer()
 {
 	g_iDuelTimer = DUEL_TIME + 1;
 	Task_DuelTimer();
+	
+	ExecuteForward(g_iForwards[DUEL_START], g_iReturn, g_iDuelPlayers[DUELIST_T], g_iDuelPlayers[DUELIST_CT], g_iDuelTimer);
 }
 public Task_DuelTimer()
 {
@@ -521,34 +513,49 @@ public Task_DuelTimer()
 	}
 	else
 	{
+		client_cmd(0, "spk buttons/lightswitch2");
 		set_task(1.0, "Task_DuelTimer", TASK_DUELTIMER);
 	}
 }
 PrepareForDuel(player)
 {
-	strip_user_weapons(g_iDuelPlayers[player]);
-	set_user_health(g_iDuelPlayers[player], 100);
-	set_user_gravity(g_iDuelPlayers[player], 1.0);
-	set_user_rendering(g_iDuelPlayers[player], kRenderFxGlowShell, g_iColors[player][0], g_iColors[player][1], g_iColors[player][2], kRenderNormal, 20);
+	rg_remove_all_items(g_iDuelPlayers[player], true);
+	set_entvar(g_iDuelPlayers[player], var_health, 100.0);
+	set_entvar(g_iDuelPlayers[player], var_gravity, 1.0);
+	rh_set_user_rendering(g_iDuelPlayers[player], kRenderFxGlowShell, g_fColors[player], kRenderNormal, 20.0);
 }
 MovePlayerToSpawn(player)
 {
-	set_pev(g_iDuelPlayers[player], pev_origin, g_fDuelSpawnOrigins[player]);
-	set_pev(g_iDuelPlayers[player], pev_v_angle, g_fDuelSpawnAngles[player]);
-	set_pev(g_iDuelPlayers[player], pev_angles, g_fDuelSpawnAngles[player]);
-	set_pev(g_iDuelPlayers[player], pev_fixangle, 1);
-	set_pev(g_iDuelPlayers[player], pev_velocity, {0.0, 0.0, 0.0});
+	set_entvar(g_iDuelPlayers[player], var_origin, g_fDuelSpawnOrigins[player]);
+	set_entvar(g_iDuelPlayers[player], var_v_angle, g_fDuelSpawnAngles[player]);
+	set_entvar(g_iDuelPlayers[player], var_angles, g_fDuelSpawnAngles[player]);
+	set_entvar(g_iDuelPlayers[player], var_fixangle, 1);
+	set_entvar(g_iDuelPlayers[player], var_velocity, Float:{0.0, 0.0, 0.0});
 }
 StartTurnDuel(type)
 {
-	g_iDuelWeapon[DUELIST_CT] = give_item(g_iDuelPlayers[DUELIST_CT], g_eDuelWeaponWithTurn[type]);
-	g_iDuelWeapon[DUELIST_T] = give_item(g_iDuelPlayers[DUELIST_T], g_eDuelWeaponWithTurn[type]);
-	if(pev_valid(g_iDuelWeapon[DUELIST_CT])) cs_set_weapon_ammo(g_iDuelWeapon[DUELIST_CT], 1);
-	if(pev_valid(g_iDuelWeapon[DUELIST_T])) cs_set_weapon_ammo(g_iDuelWeapon[DUELIST_T], 0);
+	g_iDuelWeapon[DUELIST_CT] = rg_give_item(g_iDuelPlayers[DUELIST_CT], g_eDuelWeaponWithTurn[type], GT_REPLACE);
+	g_iDuelWeapon[DUELIST_T] = rg_give_item(g_iDuelPlayers[DUELIST_T], g_eDuelWeaponWithTurn[type], GT_REPLACE);
 	
-	g_iDuelTurnTimer = FIRE_TIME;
-	g_iCurTurn = DUELIST_CT;
-	Task_ChangeTurn();
+	new WeaponIdType:WeaponId, AmmoType;
+	{
+		WeaponId = rg_get_weapon_info(g_eDuelWeaponWithTurn[type], WI_ID);
+		AmmoType = rg_get_weapon_info(WeaponId, WI_AMMO_TYPE);
+		
+		if(AmmoType > 0)
+		{	
+			if(is_entity(g_iDuelWeapon[DUELIST_CT]) 
+			&& is_entity(g_iDuelWeapon[DUELIST_T]))
+			{
+				rg_set_user_ammo(g_iDuelPlayers[DUELIST_CT], WeaponId, 1);
+				rg_set_user_ammo(g_iDuelPlayers[DUELIST_T], WeaponId, 0);
+			}
+			
+			g_iDuelTurnTimer = FIRE_TIME;
+			g_iCurTurn = DUELIST_CT;
+			Task_ChangeTurn();
+		}
+	}
 }
 public Task_ChangeTurn()
 {
@@ -560,7 +567,7 @@ public Task_ChangeTurn()
 	}
 	else
 	{
-		if(pev_valid(g_iDuelWeapon[g_iCurTurn]))
+		if(is_entity(g_iDuelWeapon[g_iCurTurn]))
 		{
 			ExecuteHamB(Ham_Weapon_PrimaryAttack, g_iDuelWeapon[g_iCurTurn]);
 		}
@@ -580,6 +587,7 @@ CheckPlayersDistance()
 	{
 		return;
 	}
+	
 	new distance = get_entity_distance(g_iDuelPlayers[DUELIST_CT], g_iDuelPlayers[DUELIST_T]);
 	if(distance < g_iMinDistance || distance > MAX_DISTANCE)
 	{
@@ -591,48 +599,55 @@ public Ham_WeaponPrimaryAttack_Post(weapon)
 {
 	if(!g_bDuelStarted || (weapon != g_iDuelWeapon[DUELIST_CT] && weapon != g_iDuelWeapon[DUELIST_T])) return HAM_IGNORED;
 	
-	new player = get_pdata_cbase(weapon, m_pPlayer, XO_CBASEPLAYERWEAPON);
+	new player = get_member(weapon, m_pPlayer);
 	
 	if(player == g_iDuelPlayers[g_iCurTurn])
 	{
 		g_iDuelTurnTimer = FIRE_TIME;
 		g_iCurTurn ^= 1;
-		cs_set_weapon_ammo(g_iDuelWeapon[g_iCurTurn], 1);
+		
+		new WeaponIdType:weaponbox_id;
+		{
+			weaponbox_id = rg_get_weaponbox_id(g_iDuelWeapon[g_iCurTurn]);
+			rg_set_user_ammo(g_iDuelPlayers[g_iCurTurn], weaponbox_id, 1);
+		}
+		
 		remove_task(TASK_TURNCHANGER);
 		Task_ChangeTurn();
 	}
 	
 	return HAM_IGNORED;
 }
-public Ham_SecondaryAttack_Pre(weapon)
+public Ham_WeaponSecondaryAttack_Pre(weapon)
 {
 	return g_bDuelStarted ? HAM_SUPERCEDE : HAM_IGNORED;
-}
-public Ham_PlayerTakeDamage_Pre(victim, idinflictor, attacker, Float:damage, damagebits)
-{
-	if(!g_bDuelStarted || victim == attacker || (victim != g_iDuelPlayers[DUELIST_CT] && victim != g_iDuelPlayers[DUELIST_T]))
-	{
-		return HAM_IGNORED;
-	}
-	
-	if(attacker != g_iDuelPlayers[DUELIST_CT] && attacker != g_iDuelPlayers[DUELIST_T])
-	{
-		return HAM_SUPERCEDE;
-	}
-	
-	return HAM_IGNORED;
 }
 public Engine_DuelTouch(ent, toucher)
 {
 	return g_bDuelStarted ? PLUGIN_HANDLED : PLUGIN_CONTINUE;
 }
-public Ham_PlayerKilled_Post(victim, killer)
+public CBasePlayer_TakeDamage_Pre(const this, pevInflictor, pevAttacker, Float:flDamage, bitsDamageType)
 {
-	if(g_bDuelStarted && (victim == g_iDuelPlayers[DUELIST_CT] || victim == g_iDuelPlayers[DUELIST_T]))
+	if(!g_bDuelStarted || this == pevAttacker || (this != g_iDuelPlayers[DUELIST_CT] && this != g_iDuelPlayers[DUELIST_T]))
 	{
-		if(killer != victim && (killer == g_iDuelPlayers[DUELIST_CT] || killer == g_iDuelPlayers[DUELIST_T]))
+		return HC_CONTINUE;
+	}
+	
+	if(pevAttacker != g_iDuelPlayers[DUELIST_CT] && pevAttacker != g_iDuelPlayers[DUELIST_T])
+	{
+		SetHookChainReturn(ATYPE_INTEGER, 0);
+		return HC_SUPERCEDE;
+	}
+	
+	return HC_CONTINUE;
+}
+public CBasePlayer_Killed_Post(const this, pevAttacker, iGib)
+{
+	if(g_bDuelStarted && (this == g_iDuelPlayers[DUELIST_CT] || this == g_iDuelPlayers[DUELIST_T]))
+	{
+		if(pevAttacker != this && (pevAttacker == g_iDuelPlayers[DUELIST_CT] || pevAttacker == g_iDuelPlayers[DUELIST_T]))
 		{
-			FinishDuel(killer, victim);
+			FinishDuel(pevAttacker, this);
 		}
 		else
 		{
@@ -640,27 +655,28 @@ public Ham_PlayerKilled_Post(victim, killer)
 		}
 		ResetDuel();
 	}
-	#if defined SHOW_MENU_FOR_LAST_CT
+#if defined SHOW_MENU_FOR_LAST_CT
 	else
 	{
 		new players[32], pnum; get_players(players, pnum, "ae", "CT");
 		if(pnum == 1)
 		{
-			new ct = players[0]; get_players(players, pnum, "ae", "TERRORIST");
+			new ct = players[0]; get_players(players, pnum, "ae", "TERRORIST"); 
 			if(pnum)
 			{
-				Show_DuelOffer(ct);
+				new t = players[0];
+				Show_DuelOffer(ct, t);
 			}
 		}
 	}
-	#endif
+#endif
 }
 #if defined SHOW_MENU_FOR_LAST_CT
-Show_DuelOffer(id)
+Show_DuelOffer(id, enemy)
 {
 	new szMenu[256], iLen;
-	
-	iLen = formatex(szMenu, charsmax(szMenu), "%L^n^n", id, "DRD_DUEL_OFFER");
+	new szEnemy[32]; get_entvar(enemy, var_netname, szEnemy, charsmax(szEnemy));
+	iLen = formatex(szMenu, charsmax(szMenu), "%L^n^n", id, "DRD_DUEL_OFFER", szEnemy);
 	iLen += formatex(szMenu[iLen], charsmax(szMenu) - iLen, "\r1.\w %L^n", id, "DRD_YES");
 	iLen += formatex(szMenu[iLen], charsmax(szMenu) - iLen, "\r2.\w %L", id, "DRD_NO");
 	
@@ -679,8 +695,12 @@ FinishDuel(winner, looser)
 {
 	ExecuteForward(g_iForwards[DUEL_FINISH], g_iReturn, winner, looser);
 	
-	new szName[32]; get_user_name(winner, szName, charsmax(szName));
-	client_print_color(0, winner, "%s^1 %L", PREFIX, LANG_PLAYER, "DRD_DUEL_WINNER", szName);
+	new szWinner[32]; get_entvar(winner, var_netname, szWinner, charsmax(szWinner));
+	client_print_color(0, winner, "%s^1 %L", PREFIX, LANG_PLAYER, "DRD_DUEL_WINNER", szWinner);
+}
+public CBasePlayer_DropPlayerItem_Pre(const this, const pszItemName[])
+{
+	return g_bDuelStarted ? HC_SUPERCEDE : HC_CONTINUE;
 }
 public dr_selected_mode(id, mode)
 {
@@ -704,14 +724,20 @@ StopFuncConveyor()
 {
 	g_bSavedConveyorInfo = true;
 	new ent = -1;
-	while((ent = find_ent_by_class(ent, "func_conveyor")))
+	while((ent = rg_find_ent_by_class(ent, "func_conveyor", true)))
 	{
-		new Float:speed; pev(ent, pev_speed, speed);
-		set_pev(ent, pev_fuser1, speed);
-		set_pev(ent, pev_speed, 0.0);
-		new Float:vector[3]; pev(ent, pev_rendercolor, vector);
-		set_pev(ent, pev_vuser1, vector);
-		set_pev(ent, pev_rendercolor, Float:{0.0, 0.0, 0.0});
+		new Float:speed;
+		{
+			get_entvar(ent, var_speed);
+			set_entvar(ent, var_fuser1, speed);
+			set_entvar(ent, var_speed, 0.0);
+		}
+		new Float:vector[3];
+		{
+			get_entvar(ent, var_rendercolor, vector);
+			set_entvar(ent, var_vuser1, vector);
+			set_entvar(ent, var_rendercolor, Float:{0.0, 0.0, 0.0});
+		}
 	}
 }
 RestoreFuncConveyor()
@@ -719,12 +745,26 @@ RestoreFuncConveyor()
 	if(g_bSavedConveyorInfo)
 	{
 		new ent = -1;
-		while((ent = find_ent_by_class(ent, "func_conveyor")))
+		while((ent = rg_find_ent_by_class(ent, "func_conveyor", true)))
 		{
-			new Float:speed; pev(ent, pev_fuser1, speed);
-			set_pev(ent, pev_speed, speed);
-			new Float:vector[3]; pev(ent, pev_vuser1, vector);
-			set_pev(ent, pev_rendercolor, vector);
+			new Float:speed;
+			{
+				get_entvar(ent, var_fuser1, speed);
+				set_entvar(ent, var_speed, speed);
+			}
+			new Float:vector[3];
+			{
+				get_entvar(ent, var_vuser1, vector);
+				set_entvar(ent, var_rendercolor, vector);
+			}
 		}
 	}
+}
+
+stock rh_set_user_rendering(index, fx = kRenderFxNone, Float:rgb[3], render = kRenderNormal, Float:amount)
+{
+	set_entvar(index, var_renderfx, fx);
+	set_entvar(index, var_rendercolor, rgb);
+	set_entvar(index, var_rendermode, render);
+	set_entvar(index, var_renderamt, amount);
 }
