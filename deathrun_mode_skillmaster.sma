@@ -74,6 +74,7 @@ public plugin_init()
 	g_iModeSkillMaster = dr_register_mode
 	(
 		.Name = "DRM_MODE_SKILLMASTER",
+		.Info = "DRM_MODE_INFO_SKILLMASTER",
 		.Mark = "skillmaster",
 		.RoundDelay = 0,
 		.CT_BlockWeapons = 0,

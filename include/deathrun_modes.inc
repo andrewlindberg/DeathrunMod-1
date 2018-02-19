@@ -15,6 +15,7 @@
 enum _:ModeData
 {
 	m_Name[32],
+	m_Dhud[64],
 	m_Mark[16],
 	m_RoundDelay,
 	m_CurDelay,
@@ -43,7 +44,7 @@ enum _:ModeData
  *
  * @return					Mode index.
  */
-native dr_register_mode(Name[32], Mark[16], RoundDelay, CT_BlockWeapons, TT_BlockWeapons, CT_BlockButtons, TT_BlockButtons, Bhop, Usp, Hide = 0);
+native dr_register_mode(Name[32], Info[64], Mark[16], RoundDelay, CT_BlockWeapons, TT_BlockWeapons, CT_BlockButtons, TT_BlockButtons, Bhop, Usp, Hide = 0);
 
 /**
  * Get current mode.

@@ -31,6 +31,7 @@ public plugin_init()
 	g_iModeFree = dr_register_mode
 	(
 		.Name = "DRM_MODE_FREE",
+		.Info = "DRM_MODE_INFO_FREE",
 		.Mark = "free",
 		.RoundDelay = 0,
 		.CT_BlockWeapons = 1,

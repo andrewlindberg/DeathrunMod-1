@@ -58,6 +58,7 @@ public plugin_init()
 	g_iModeSnow = dr_register_mode
 	(
 		.Name = "DRM_MODE_SNOW",
+		.Info = "DRM_MODE_INFO_SNOW",
 		.Mark = "snow",
 		.RoundDelay = 3,
 		.CT_BlockWeapons = 1,

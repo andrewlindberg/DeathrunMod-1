@@ -54,6 +54,7 @@ public plugin_init()
 	g_iModeRambo = dr_register_mode
 	(
 		.Name = "DRM_MODE_RAMBO",
+		.Info = "DRM_MODE_INFO_RAMBO",
 		.Mark = "rambo",
 		.RoundDelay = 0,
 		.CT_BlockWeapons = 0,

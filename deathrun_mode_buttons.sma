@@ -33,6 +33,7 @@ public plugin_init()
 	g_iModeButtons = dr_register_mode
 	(
 		.Name = "DRM_MODE_BUTTONS",
+		.Info = "DRM_MODE_INFO_BUTTONS",
 		.Mark = "buttons",
 		.RoundDelay = 0,
 		.CT_BlockWeapons = 0,

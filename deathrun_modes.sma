@@ -94,6 +94,7 @@ public native_register_mode(plugin, params)
 	enum
 	{
 		arg_name = 1,
+		arg_hud,
 		arg_mark,
 		arg_round_delay,
 		arg_ct_block_weapons,
@@ -108,6 +109,7 @@ public native_register_mode(plugin, params)
 	new mode_info[ModeData];
 	
 	get_string(arg_name, mode_info[m_Name], charsmax(mode_info[m_Name]));
+	get_string(arg_hud, mode_info[m_Dhud], charsmax(mode_info[m_Dhud]));
 	get_string(arg_mark, mode_info[m_Mark], charsmax(mode_info[m_Mark]));
 	mode_info[m_RoundDelay] = get_param(arg_round_delay);
 	mode_info[m_CT_BlockWeapon] = get_param(arg_ct_block_weapons);
@@ -444,8 +446,15 @@ public ModesMenu_Handler(id, menu, item)
 	CheckUsp();
 	
 	remove_task(id + TASK_SHOWMENU);
-	ExecuteForward(g_fwSelectedMode, g_fwReturn, id, mode + 1);			
-	client_print_color(0, print_team_red, "%s %L", PREFIX, LANG_PLAYER, "DRM_SELECTED_MODE", LANG_PLAYER, g_eCurModeInfo[m_Name]);
+	ExecuteForward(g_fwSelectedMode, g_fwReturn, id, mode + 1);
+	
+	if (g_eCurModeInfo[m_Dhud][0])
+	{
+		set_dhudmessage(random(200) + 55, random(200) + 55, random(200) + 55, 0.01, 0.50, 0, 0.00, 3.00, 0.20, 3.00);
+		show_dhudmessage(0, "%L^n%L", LANG_PLAYER, "DRM_SELECTED_MODE", LANG_PLAYER, g_eCurModeInfo[m_Name], LANG_PLAYER, g_eCurModeInfo[m_Dhud]);
+	}
+	
+	client_print_color(0, print_team_red, "%s ^3%L", PREFIX, LANG_PLAYER, "DRM_SELECTED_MODE", LANG_PLAYER, g_eCurModeInfo[m_Name]);
 	
 	menu_destroy(menu);
 	return PLUGIN_HANDLED;
@@ -495,7 +504,13 @@ public Task_MenuTimer(id)
 		
 		ExecuteForward(g_fwSelectedMode, g_fwReturn, id, mode + 1);
 		
-		client_print_color(0, print_team_red, "%s %L", PREFIX, LANG_PLAYER, "DRM_RANDOM_MODE", LANG_PLAYER, g_eCurModeInfo[m_Name]);
+		if (g_eCurModeInfo[m_Dhud][0])
+		{
+			set_dhudmessage(random(200) + 55, random(200) + 55, random(200) + 55, 0.01, 0.50, 0, 0.00, 3.00, 0.20, 3.00);
+			show_dhudmessage(0, "%L^n%L", LANG_PLAYER, "DRM_RANDOM_MODE", LANG_PLAYER, g_eCurModeInfo[m_Name], LANG_PLAYER, g_eCurModeInfo[m_Dhud]);
+		}
+		
+		client_print_color(0, print_team_red, "%s ^3%L", PREFIX, LANG_PLAYER, "DRM_RANDOM_MODE", LANG_PLAYER, g_eCurModeInfo[m_Name]);
 	}
 	else
 	{

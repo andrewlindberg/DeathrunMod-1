@@ -22,6 +22,7 @@ public plugin_init()
 	g_iModeInvis = dr_register_mode
 	(
 		.Name = "DRM_MODE_INVIS",
+		.Info = "DRM_MODE_INFO_INVIS",
 		.Mark = "invis",
 		.RoundDelay = 2,
 		.CT_BlockWeapons = 0,
