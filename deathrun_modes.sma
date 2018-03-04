@@ -4,6 +4,7 @@
 #include <hamsandwich>
 #include <deathrun_modes>
 #include <fun>
+#include <reapi>
 
 #if AMXX_VERSION_NUM < 183
 	#include <colorchat>
@@ -400,7 +401,7 @@ public CBasePlayer_Spawn_Post(const this)
 		}
 	}
 	
-	if (g_iCurMode != NONE_MODE || team != CS_TEAM_T)
+	if (g_iCurMode != NONE_MODE || team != TEAM_TERRORIST)
 	{
 		return HC_CONTINUE;
 	}
@@ -417,7 +418,7 @@ public Show_ModesMenu(id)
 	new menu = menu_create(text, "ModesMenu_Handler");
 	
 	new mode_info[ModeData], i;
-	for (item[2], len; i < g_iModesNum; i++)
+	for (new item[2], len; i < g_iModesNum; i++)
 	{
 		ArrayGetArray(g_aModes, i, mode_info);
 		
