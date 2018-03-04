@@ -760,11 +760,3 @@ RestoreFuncConveyor()
 		}
 	}
 }
-
-stock rh_set_user_rendering(index, fx = kRenderFxNone, Float:rgb[3], render = kRenderNormal, Float:amount)
-{
-	set_entvar(index, var_renderfx, fx);
-	set_entvar(index, var_rendercolor, rgb);
-	set_entvar(index, var_rendermode, render);
-	set_entvar(index, var_renderamt, amount);
-}

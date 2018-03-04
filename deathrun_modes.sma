@@ -6,11 +6,13 @@
 #include <fun>
 
 #if AMXX_VERSION_NUM < 183
-#include <colorchat>
+	#include <colorchat>
+	#include <dhudmessage>
+	#define client_disconnected client_disconnect
 #endif
 
 #define PLUGIN "Deathrun: Modes"
-#define VERSION "1.0.5"
+#define VERSION "Re 1.0.5"
 #define AUTHOR "Mistrick"
 
 #pragma semicolon 1
@@ -50,12 +52,13 @@ public plugin_init()
 	
 	register_clcmd("say /bhop", "Command_Bhop");
 	
-	RegisterHam(Ham_Spawn, "player", "Ham_PlayerSpawn_Post", 1);
 	RegisterHam(Ham_Touch, "weaponbox", "Ham_TouchItems_Pre", 0);
 	RegisterHam(Ham_Touch, "armoury_entity", "Ham_TouchItems_Pre", 0);
 	RegisterHam(Ham_Touch, "weapon_shield", "Ham_TouchItems_Pre", 0);
 	RegisterHam(Ham_Use, "func_button", "Ham_UseButtons_Pre", 0);
-	RegisterHam(Ham_Player_Jump, "player", "Ham_PlayerJump_Pre", 0);
+	
+	RegisterHookChain(RG_CBasePlayer_Jump, "CBasePlayer_Jump_Pre", 0);
+	RegisterHookChain(RG_CBasePlayer_Spawn, "CBasePlayer_Spawn_Post", 1);
 	
 	register_event("HLTV", "Event_NewRound", "a", "1=0", "2=0");
 	register_event("TextMsg", "Event_Restart", "a", "2=#Game_Commencing", "2=#Game_will_restart_in");
@@ -109,7 +112,7 @@ public native_register_mode(plugin, params)
 	new mode_info[ModeData];
 	
 	get_string(arg_name, mode_info[m_Name], charsmax(mode_info[m_Name]));
-	get_string(arg_hud, mode_info[m_Dhud], charsmax(mode_info[m_Dhud]));
+	get_string(arg_hud, mode_info[m_Hud], charsmax(mode_info[m_Hud]));
 	get_string(arg_mark, mode_info[m_Mark], charsmax(mode_info[m_Mark]));
 	mode_info[m_RoundDelay] = get_param(arg_round_delay);
 	mode_info[m_CT_BlockWeapon] = get_param(arg_ct_block_weapons);
@@ -136,7 +139,7 @@ public native_set_mode(plugin, params)
 	
 	new mode_index = get_param(arg_mode_index) - 1;
 	
-	if(mode_index < 0 || mode_index >= g_iModesNum)
+	if (mode_index < 0 || mode_index >= g_iModesNum)
 	{
 		log_error(AMX_ERR_NATIVE, "[DRM] Set mode: wrong mode index! index %d", mode_index + 1);
 		return 0;
@@ -145,13 +148,13 @@ public native_set_mode(plugin, params)
 	g_iCurMode = mode_index;
 	ArrayGetArray(g_aModes, mode_index, g_eCurModeInfo);
 	
-	if(g_eCurModeInfo[m_RoundDelay])
+	if (g_eCurModeInfo[m_RoundDelay])
 	{
 		g_eCurModeInfo[m_CurDelay] = g_eCurModeInfo[m_RoundDelay] + 1;
 		ArraySetArray(g_aModes, mode_index, g_eCurModeInfo);
 	}
 	
-	if(get_param(arg_forward))
+	if (get_param(arg_forward))
 	{
 		ExecuteForward(g_fwSelectedMode, g_fwReturn, get_param(arg_player_id), mode_index + 1);
 	}
@@ -168,7 +171,7 @@ public native_get_mode(plugin, params)
 	
 	new size = get_param(arg_size);
 	
-	if(size > 0)
+	if (size > 0)
 	{
 		set_string(arg_name, g_eCurModeInfo[m_Name], size);
 	}
@@ -181,10 +184,10 @@ public native_get_mode_by_mark(plugin, params)
 	
 	new mark[16]; get_string(arg_mark, mark, charsmax(mark));
 	
-	for(new mode_index, mode_info[ModeData]; mode_index < g_iModesNum; mode_index++)
+	for (new mode_index, mode_info[ModeData]; mode_index < g_iModesNum; mode_index++)
 	{
 		ArrayGetArray(g_aModes, mode_index, mode_info);
-		if(equali(mark, mode_info[m_Mark]))
+		if (equali(mark, mode_info[m_Mark]))
 		{
 			return mode_index + 1;
 		}
@@ -202,7 +205,7 @@ public native_get_mode_info(plugin, params)
 	
 	new mode_index = get_param(arg_mode_index) - 1;
 	
-	if(mode_index < 0 || mode_index >= g_iModesNum)
+	if (mode_index < 0 || mode_index >= g_iModesNum)
 	{
 		log_error(AMX_ERR_NATIVE, "[DRM] Get mode info: wrong mode index! index %d", mode_index + 1);
 		return 0;
@@ -233,7 +236,7 @@ public native_set_user_bhop(plugin, params)
 	
 	new player = get_param(arg_player_id);
 	
-	if(player < 1 || player > g_iMaxPlayers)
+	if (player < 1 || player > g_iMaxPlayers)
 	{
 		log_error(AMX_ERR_NATIVE, "[DRM] Set user bhop: wrong player index! index %d", player);
 		return 0;
@@ -249,7 +252,7 @@ public bool:native_get_user_bhop(id)
 	
 	new player = get_param(arg_player_id);
 	
-	if(player < 1 || player > g_iMaxPlayers)
+	if (player < 1 || player > g_iMaxPlayers)
 	{
 		log_error(AMX_ERR_NATIVE, "[DRM] Get user bhop: wrong player index! index %d", player);
 		return false;
@@ -261,13 +264,16 @@ public client_putinserver(id)
 {
 	g_bBhop[id] = true;
 }
-public client_disconnect(id)
+public client_disconnected(id)
 {
 	remove_task(id + TASK_SHOWMENU);
 }
 public Command_Bhop(id)
 {
-	if(!g_eCurModeInfo[m_Bhop]) return PLUGIN_CONTINUE;
+	if (!g_eCurModeInfo[m_Bhop])
+	{
+		return PLUGIN_CONTINUE;
+	}
 	
 	g_bBhop[id] = !g_bBhop[id];
 	client_print_color(id, print_team_default, "%s^1 %L", PREFIX, id, "DRM_BHOP_MSG", id, g_bBhop[id] ? "DRM_ENABLED" : "DRM_DISABLED");
@@ -289,16 +295,16 @@ public Event_NewRound()
 	ExecuteForward(g_fwSelectedMode, g_fwReturn, 0, g_iCurMode + 1);
 	
 	new mode_info[ModeData];
-	for(new i = 0; i < g_iModesNum; i++)
+	for (new i = 0; i < g_iModesNum; i++)
 	{
 		ArrayGetArray(g_aModes, i, mode_info);
-		if(mode_info[m_CurDelay])
+		if (mode_info[m_CurDelay])
 		{
 			mode_info[m_CurDelay]--;
 			ArraySetArray(g_aModes, i, mode_info);
 		}
 	}
-	for(new id = 1; id <= g_iMaxPlayers; id++)
+	for (new id = 1; id <= g_iMaxPlayers; id++)
 	{
 		remove_task(id + TASK_SHOWMENU);
 	}
@@ -306,7 +312,7 @@ public Event_NewRound()
 public Event_Restart()
 {
 	new mode_info[ModeData];
-	for(new i = 0; i < g_iModesNum; i++)
+	for (new i = 0; i < g_iModesNum; i++)
 	{
 		ArrayGetArray(g_aModes, i, mode_info);
 		mode_info[m_CurDelay] = 0;
@@ -314,34 +320,16 @@ public Event_Restart()
 	}
 }
 //***** Ham *****//
-public Ham_PlayerJump_Pre(id)
-{	
-	if(!g_eCurModeInfo[m_Bhop] || !g_bBhop[id]) return HAM_IGNORED;
-	
-	new flags = pev(id, pev_flags);
-	
-	if(flags & FL_WATERJUMP || pev(id, pev_waterlevel) >= 2 || !(flags & FL_ONGROUND))
-		return HAM_IGNORED;
-
-	new Float:velocity[3];
-	
-	pev(id, pev_velocity, velocity);
-	
-	velocity[2] = 250.0;
-	
-	set_pev(id, pev_velocity, velocity);
-	set_pev(id, pev_gaitsequence, 6);
-	set_pev(id, pev_fuser2, 0.0);
-	
-	return HAM_IGNORED;
-}
 public Ham_UseButtons_Pre(ent, caller, activator, use_type)
 {
-	if(!IsPlayer(activator)) return HAM_IGNORED;
+	if (!IsPlayer(activator))
+	{
+		return HAM_IGNORED;
+	}
 	
-	new CsTeams:team = cs_get_user_team(activator);
+	new TeamName:team = get_member(activator, m_iTeam);
 	
-	if(team == CS_TEAM_T && g_eCurModeInfo[m_TT_BlockButtons] || team == CS_TEAM_CT && g_eCurModeInfo[m_CT_BlockButtons])
+	if (team == TEAM_TERRORIST && g_eCurModeInfo[m_TT_BlockButtons] || team == TEAM_CT && g_eCurModeInfo[m_CT_BlockButtons])
 	{
 		return HAM_SUPERCEDE;
 	}
@@ -350,53 +338,93 @@ public Ham_UseButtons_Pre(ent, caller, activator, use_type)
 }
 public Ham_TouchItems_Pre(ent, id)
 {
-	if(!IsPlayer(id) || g_iCurMode == NONE_MODE) return HAM_IGNORED;
+	if (!IsPlayer(id) || g_iCurMode == NONE_MODE)
+	{
+		return HAM_IGNORED;
+	}
 	
-	new CsTeams:team = cs_get_user_team(id);
+	new TeamName:team = get_member(id, m_iTeam);
 	
-	if(team == CS_TEAM_T && g_eCurModeInfo[m_TT_BlockWeapon] || team == CS_TEAM_CT && g_eCurModeInfo[m_CT_BlockWeapon])
+	if (team == TEAM_TERRORIST && g_eCurModeInfo[m_TT_BlockWeapon] || team == TEAM_CT && g_eCurModeInfo[m_CT_BlockWeapon])
 	{
 		return HAM_SUPERCEDE;
 	}
 	
 	return HAM_IGNORED;
 }
-public Ham_PlayerSpawn_Post(id)
-{
-	if(!is_user_alive(id)) return HAM_IGNORED;
-	
-	set_user_rendering(id);
-	
-	new CsTeams:team = cs_get_user_team(id);
-	
-	if(g_eCurModeInfo[m_Usp] && team == CS_TEAM_CT)
+//***** ReApi *****//
+public CBasePlayer_Jump_Pre(const this)
+{	
+	if (!g_eCurModeInfo[m_Bhop] || !g_bBhop[this])
 	{
-		give_item(id, "weapon_usp");
-		cs_set_user_bpammo(id, CSW_USP, 100);
+		return HC_CONTINUE;
 	}
 	
-	if(g_iCurMode != NONE_MODE  || team != CS_TEAM_T) return HAM_IGNORED;
+	new flags = get_entvar(this, var_flags);
 	
-	g_iTimer[id] = TIMER + 1;
-	g_iPage[id] = 0;
-	Task_MenuTimer(id + TASK_SHOWMENU);
+	if (flags & FL_WATERJUMP || !(flags & FL_ONGROUND) || get_entvar(this, var_waterlevel) >= 2)
+	{
+		return HC_CONTINUE;
+	}
+
+	new Float:velocity[3];
+	{
+		get_entvar(this, var_velocity, velocity);
+		velocity[2] = 250.0;
+		set_entvar(this, var_velocity, velocity);
+	}
 	
-	return HAM_IGNORED;
+	set_entvar(this, var_gaitsequence, 6);
+	set_entvar(this, var_fuser2, 0);
+	
+	return HC_CONTINUE;
+}
+public CBasePlayer_Spawn_Post(const this)
+{
+	if (!is_user_alive(this))
+	{
+		return HC_CONTINUE;
+	}
+	
+	rh_set_user_rendering(this);
+	
+	new TeamName:team = get_member(this, m_iTeam);
+	
+	if (g_eCurModeInfo[m_Usp])
+	{
+		rg_remove_items_by_slot(this, PISTOL_SLOT);
+		if (team == TEAM_CT)
+		{
+			rg_give_item(this, "weapon_usp");
+			rg_set_user_bpammo(this, WEAPON_USP, 100);
+		}
+	}
+	
+	if (g_iCurMode != NONE_MODE || team != CS_TEAM_T)
+	{
+		return HC_CONTINUE;
+	}
+	
+	g_iTimer[this] = TIMER + 1;
+	g_iPage[this] = 0;
+	Task_MenuTimer(this + TASK_SHOWMENU);
+	
+	return HC_CONTINUE;
 }
 public Show_ModesMenu(id)
 {
 	new text[80]; formatex(text, charsmax(text), "%L^n^n%L ", id, "DRM_MENU_SELECT_MODE", id, "DRM_MENU_TIMELEFT", g_iTimer[id]);
 	new menu = menu_create(text, "ModesMenu_Handler");
 	
-	new mode_info[ModeData];
-	for(new i, item[2], len; i < g_iModesNum; i++)
+	new mode_info[ModeData], i;
+	for (item[2], len; i < g_iModesNum; i++)
 	{
 		ArrayGetArray(g_aModes, i, mode_info);
 		
 		if(mode_info[m_Hide]) continue;
 		
 		len = formatex(text, charsmax(text), "%L", id, mode_info[m_Name]);
-		if(mode_info[m_CurDelay] > 0)
+		if (mode_info[m_CurDelay] > 0)
 		{
 			formatex(text[len], charsmax(text) - len, "[\r%d\d]", mode_info[m_CurDelay]);
 		}
@@ -406,12 +434,19 @@ public Show_ModesMenu(id)
 		menu_additem(menu, text, item, 0, mode_info[m_CurDelay] ? g_hDisableItem : -1);
 	}
 	
-	formatex(text, charsmax(text), "%L", id, "DRM_MENU_BACK");
-	menu_setprop(menu, MPROP_BACKNAME, text);
-	formatex(text, charsmax(text), "%L", id, "DRM_MENU_NEXT");
-	menu_setprop(menu, MPROP_NEXTNAME, text);
-	
-	menu_setprop(menu, MPROP_EXIT, MEXIT_NEVER);
+	if(i > 9)
+	{
+		formatex(text, charsmax(text), "%L", id, "DRM_MENU_BACK");
+		menu_setprop(menu, MPROP_BACKNAME, text);
+		formatex(text, charsmax(text), "%L", id, "DRM_MENU_NEXT");
+		menu_setprop(menu, MPROP_NEXTNAME, text);
+		
+		menu_setprop(menu, MPROP_EXIT, MEXIT_NEVER);
+	}
+	else
+	{
+		menu_setprop(menu, MPROP_PERPAGE, 0);
+	}
 	
 	new _menu, _newmenu, _menupage;
 	player_menu_info(id, _menu, _newmenu, _menupage);
@@ -423,7 +458,7 @@ public Show_ModesMenu(id)
 }
 public ModesMenu_Handler(id, menu, item)
 {
-	if(item == MENU_EXIT || g_iCurMode != NONE_MODE || cs_get_user_team(id) != CS_TEAM_T)
+	if (item == MENU_EXIT || g_iCurMode != NONE_MODE || get_member(id, m_iTeam) != CS_TEAM_T)
 	{
 		menu_destroy(menu);
 		return PLUGIN_HANDLED;
@@ -437,7 +472,7 @@ public ModesMenu_Handler(id, menu, item)
 	
 	ArrayGetArray(g_aModes, mode, g_eCurModeInfo);
 	
-	if(g_eCurModeInfo[m_RoundDelay])
+	if (g_eCurModeInfo[m_RoundDelay])
 	{
 		g_eCurModeInfo[m_CurDelay] = g_eCurModeInfo[m_RoundDelay] + 1;
 		ArraySetArray(g_aModes, mode, g_eCurModeInfo);
@@ -448,10 +483,10 @@ public ModesMenu_Handler(id, menu, item)
 	remove_task(id + TASK_SHOWMENU);
 	ExecuteForward(g_fwSelectedMode, g_fwReturn, id, mode + 1);
 	
-	if (g_eCurModeInfo[m_Dhud][0])
+	if (g_eCurModeInfo[m_Hud][0])
 	{
 		set_dhudmessage(random(200) + 55, random(200) + 55, random(200) + 55, 0.01, 0.50, 0, 0.00, 3.00, 0.20, 3.00);
-		show_dhudmessage(0, "%L^n%L", LANG_PLAYER, "DRM_SELECTED_MODE", LANG_PLAYER, g_eCurModeInfo[m_Name], LANG_PLAYER, g_eCurModeInfo[m_Dhud]);
+		show_dhudmessage(0, "%L^n%L", LANG_PLAYER, "DRM_SELECTED_MODE", LANG_PLAYER, g_eCurModeInfo[m_Name], LANG_PLAYER, g_eCurModeInfo[m_Hud]);
 	}
 	
 	client_print_color(0, print_team_red, "%s ^3%L", PREFIX, LANG_PLAYER, "DRM_SELECTED_MODE", LANG_PLAYER, g_eCurModeInfo[m_Name]);
@@ -467,17 +502,18 @@ public Task_MenuTimer(id)
 {
 	id -= TASK_SHOWMENU;
 	
-	if(g_iCurMode != NONE_MODE || !is_user_alive(id) || cs_get_user_team(id) != CS_TEAM_T)
+	if (g_iCurMode != NONE_MODE || !is_user_alive(id) || get_member(id, m_iTeam) != CS_TEAM_T)
 	{
 		show_menu(id, 0, "^n"); return;
 	}
-	if(--g_iTimer[id] <= 0)
+
+	if (--g_iTimer[id] <= 0)
 	{
 		show_menu(id, 0, "^n");
 		
 		new mode;
 		
-		if(!is_all_modes_blocked())
+		if (!is_all_modes_blocked())
 		{
 			do {
 				mode = random(g_iModesNum);
@@ -489,12 +525,12 @@ public Task_MenuTimer(id)
 			do {
 				mode = random(g_iModesNum);
 				ArrayGetArray(g_aModes, mode, g_eCurModeInfo);
-			} while(g_eCurModeInfo[m_Hide]);
+			} while (g_eCurModeInfo[m_Hide]);
 		}
 		
 		g_iCurMode = mode;
 		
-		if(g_eCurModeInfo[m_RoundDelay])
+		if (g_eCurModeInfo[m_RoundDelay])
 		{
 			g_eCurModeInfo[m_CurDelay] = g_eCurModeInfo[m_RoundDelay] + 1;
 			ArraySetArray(g_aModes, mode, g_eCurModeInfo);
@@ -504,10 +540,10 @@ public Task_MenuTimer(id)
 		
 		ExecuteForward(g_fwSelectedMode, g_fwReturn, id, mode + 1);
 		
-		if (g_eCurModeInfo[m_Dhud][0])
+		if (g_eCurModeInfo[m_Hud][0])
 		{
 			set_dhudmessage(random(200) + 55, random(200) + 55, random(200) + 55, 0.01, 0.50, 0, 0.00, 3.00, 0.20, 3.00);
-			show_dhudmessage(0, "%L^n%L", LANG_PLAYER, "DRM_RANDOM_MODE", LANG_PLAYER, g_eCurModeInfo[m_Name], LANG_PLAYER, g_eCurModeInfo[m_Dhud]);
+			show_dhudmessage(0, "%L^n%L", LANG_PLAYER, "DRM_RANDOM_MODE", LANG_PLAYER, g_eCurModeInfo[m_Name], LANG_PLAYER, g_eCurModeInfo[m_Hud]);
 		}
 		
 		client_print_color(0, print_team_red, "%s ^3%L", PREFIX, LANG_PLAYER, "DRM_RANDOM_MODE", LANG_PLAYER, g_eCurModeInfo[m_Name]);
@@ -520,37 +556,37 @@ public Task_MenuTimer(id)
 }
 CheckUsp()
 {
-	#if DEFAULT_USP < 1
-	if(g_eCurModeInfo[m_Usp])
+#if DEFAULT_USP < 1
+	if (g_eCurModeInfo[m_Usp])
 	{
 		new player, players[32], pnum; get_players(players, pnum, "ae", "CT");
-		for(new i = 0; i < pnum; i++)
+		for (new i = 0; i < pnum; i++)
 		{
 			player = players[i];
-			give_item(player, "weapon_usp");
-			cs_set_user_bpammo(player, CSW_USP, 100);
+			rg_give_item(player, "weapon_usp");
+			rg_set_user_bpammo(player, WEAPON_USP, 100);
 		}
 	}
-	#else
-	if(!g_eCurModeInfo[m_Usp])
+#else
+	if (!g_eCurModeInfo[m_Usp])
 	{
 		new player, players[32], pnum; get_players(players, pnum, "ae", "CT");
-		for(new i = 0; i < pnum; i++)
+		for (new i = 0; i < pnum; i++)
 		{
 			player = players[i];
-			fm_strip_user_gun(player, CSW_USP);
+			rg_remove_items_by_slot(player, PISTOL_SLOT);
 		}
 	}
-	#endif
+#endif
 }
-//*****  *****//
+// ********** //
 bool:is_all_modes_blocked()
 {
 	new mode_info[ModeData];
-	for(new i; i < g_iModesNum; i++)
+	for (new i; i < g_iModesNum; i++)
 	{
 		ArrayGetArray(g_aModes, i, mode_info);
-		if(!mode_info[m_CurDelay] && !mode_info[m_Hide]) return false;
+		if (!mode_info[m_CurDelay] && !mode_info[m_Hide]) return false;
 	}
 	return true;
 }

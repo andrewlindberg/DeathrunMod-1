@@ -15,7 +15,7 @@
 enum _:ModeData
 {
 	m_Name[32],
-	m_Dhud[64],
+	m_Hud[64],
 	m_Mark[16],
 	m_RoundDelay,
 	m_CurDelay,
@@ -32,6 +32,7 @@ enum _:ModeData
  * Mode registration.
  *
  * @param Name				Mode name, use ML key.
+ * @param Info				Mode description, use ML key.
  * @param Mark				Mode mark, use this to get mode index in other plugins.
  * @param RoundDelay		Mode blocking in rounds.
  * @param CT_BlockWeapons	Allow CT pick up weapons.
@@ -120,3 +121,11 @@ native bool:dr_get_user_bhop(id);
  * @param mode				Mode index.
  */
 forward dr_selected_mode(id, mode);
+
+stock rh_set_user_rendering(index, fx = kRenderFxNone, Float:rgb[3] = {0.0,0.0,0.0}, render = kRenderNormal, Float:amount = 0.0)
+{
+	set_entvar(index, var_renderfx, fx);
+	set_entvar(index, var_rendercolor, rgb);
+	set_entvar(index, var_rendermode, render);
+	set_entvar(index, var_renderamt, amount);
+}
