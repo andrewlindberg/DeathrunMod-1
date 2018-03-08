@@ -20,6 +20,16 @@ enum CancelType
 	CType_ModeChanged
 }
 
+/**
+ * Get current duel.
+ * 
+ * @param name				Duel name, here will be copied the current mode ML key.
+ * @param size				Name size.
+ * 
+ * @return					Duel index.
+ */
+native dr_get_duel(name, size);
+
  /**
  * Forward which called before duel start, warm up time
  * 

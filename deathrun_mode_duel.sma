@@ -61,7 +61,7 @@ enum
 
 new g_iModeDuel;
 new g_bDuelStarted;
-new g_iDuelType;
+new g_iCurDuel;
 new g_iDuelPlayers[2];
 new g_iDuelWeapon[2];
 new g_iDuelTurnTimer;
@@ -177,6 +177,20 @@ public plugin_cfg()
 public plugin_natives()
 {
 	register_library("deathrun_duel");
+	register_native("dr_get_duel", "native_get_duel");
+}
+public native_get_duel(plugin_id, argc)
+{
+	enum { arg_name = 1, arg_size };
+	
+	new size = get_param(arg_size);
+	
+	if (size > 0)
+	{
+		set_string(arg_name, g_eDuelMenuItems[g_iCurDuel], size);
+	}
+	
+	return g_iCurDuel;
 }
 LoadSpawns()
 {
@@ -442,7 +456,7 @@ public DuelType_Handler(id, menu, item)
 	
 	dr_set_mode(g_iModeDuel, 1);
 	
-	g_iDuelType = item;
+	g_iCurDuel = item;
 	
 	DuelPreStart();
 	
@@ -476,7 +490,7 @@ public Task_PreStartTimer()
 	
 	if(--g_iDuelTimer <= 0)
 	{
-		DuelStartForward(g_iDuelType);
+		DuelStartForward(g_iCurDuel);
 	}
 	else
 	{
@@ -485,9 +499,9 @@ public Task_PreStartTimer()
 	}
 }
 
-DuelStartForward(type)
+DuelStartForward(selected_duel)
 {
-	StartTurnDuel(type);
+	StartTurnDuel(selected_duel);
 	StartDuelTimer();
 }
 StartDuelTimer()
@@ -532,14 +546,14 @@ MovePlayerToSpawn(player)
 	set_entvar(g_iDuelPlayers[player], var_fixangle, 1);
 	set_entvar(g_iDuelPlayers[player], var_velocity, Float:{0.0, 0.0, 0.0});
 }
-StartTurnDuel(type)
+StartTurnDuel(selected_duel)
 {
-	g_iDuelWeapon[DUELIST_CT] = rg_give_item(g_iDuelPlayers[DUELIST_CT], g_eDuelWeaponWithTurn[type], GT_REPLACE);
-	g_iDuelWeapon[DUELIST_T] = rg_give_item(g_iDuelPlayers[DUELIST_T], g_eDuelWeaponWithTurn[type], GT_REPLACE);
+	g_iDuelWeapon[DUELIST_CT] = rg_give_item(g_iDuelPlayers[DUELIST_CT], g_eDuelWeaponWithTurn[selected_duel], GT_REPLACE);
+	g_iDuelWeapon[DUELIST_T] = rg_give_item(g_iDuelPlayers[DUELIST_T], g_eDuelWeaponWithTurn[selected_duel], GT_REPLACE);
 	
 	new WeaponIdType:WeaponId, AmmoType;
 	{
-		WeaponId = rg_get_weapon_info(g_eDuelWeaponWithTurn[type], WI_ID);
+		WeaponId = rg_get_weapon_info(g_eDuelWeaponWithTurn[selected_duel], WI_ID);
 		AmmoType = rg_get_weapon_info(WeaponId, WI_AMMO_TYPE);
 		
 		if(AmmoType > 0)
