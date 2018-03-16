@@ -21,13 +21,14 @@ const ITEM_TEAM_CT = (1 << 2);
  * @param name			Item name in menu
  * @param cost			Item cost
  * @param team			Team access, bitsum, use ITEM_TEAM_T, ITEM_TEAM_CT
+ * @param can_gift		One can gift, 1 - yes, 0 - not
  * @param access		Admin access, admin flags
  * @param on_buy		OnBuy function(id)
  * @param can_buy		CanBuy function(id), should return ITEM_ENABLED or ITEM_DISABLED
  * 
  * @return				Item index, use with changing cost
  */
-native dr_shop_add_item(name[], cost, team = (ITEM_TEAM_T|ITEM_TEAM_CT), access = 0, on_buy[], can_buy[] = "");
+native dr_shop_add_item(name[], cost, team = (ITEM_TEAM_T|ITEM_TEAM_CT), can_gift, access = 0, on_buy[], can_buy[] = "");
 
 /**
  * Use this in CanBuy function

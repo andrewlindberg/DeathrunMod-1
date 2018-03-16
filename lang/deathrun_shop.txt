@@ -1,15 +1,23 @@
 [en]
-DRS_MENU_TITLE = Deathrun Shop
+DRS_MENU_TITLE = Shop
+DRS_MENU_DISCOUNT = Discount: %d%%
+DRS_MENU_INFO = Gift item marked '\r*\w'
 DRS_MENU_BACK = Back
 DRS_MENU_NEXT = Next
 DRS_MENU_EXIT = Exit
-DRS_CANT_BUY = You can't buy this item!
-DRS_NEED_MORE_MONEY = You need $%d more to buy this item!
+DRS_CHAT_CANT_BUY = You can't buy this item!
+DRS_CHAT_NEED_MORE_MONEY = You need $%d more to buy this item!
+DRS_CHAT_BOUGHT_ITEM = You bought %s for %s!
+DRS_CHAT_BOUGHT_GIFT = %s bought a gift (%s) for %s!
 
 [ru]
-DRS_MENU_TITLE = Deathrun Shop
+DRS_MENU_TITLE = Магазин
+DRS_MENU_DISCOUNT = Скидка: %d%%
+DRS_MENU_INFO = Подарочный предмет отмечен '\r*\w'
 DRS_MENU_BACK = Назад
 DRS_MENU_NEXT = Дальше
 DRS_MENU_EXIT = Выход
-DRS_CANT_BUY = Вы не можете купить этот предмет!
-DRS_NEED_MORE_MONEY = Вам нужно на $%d больше для покупки!
+DRS_CHAT_CANT_BUY = Вы не можете купить этот предмет!
+DRS_CHAT_NEED_MORE_MONEY = Вам нужно на $%d больше для покупки!
+DRS_CHAT_BOUGHT_ITEM = Вы купили %s!
+DRS_CHAT_BOUGHT_GIFT = %s купил подарок (%s) для %s!

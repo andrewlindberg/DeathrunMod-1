@@ -1,21 +1,25 @@
-#include <amxmodx>
+#include <amxmisc>
 #include <cstrike>
+#include <reapi>
 
 #if AMXX_VERSION_NUM < 183
 #include <colorchat>
 #endif
 
+#pragma semicolon 1
+
 #define PLUGIN "Deathrun: Shop"
-#define VERSION "0.1.2"
+#define VERSION "Re 0.1.3"
 #define AUTHOR "Mistrick"
 
-#pragma semicolon 1
+#define ADMIN_DISCOUNT 35
 
 enum _:ShopItem
 {
 	ItemName[32],
 	ItemCost,
 	ItemTeam,
+	ItemCanGift,
 	ItemAccess,
 	ItemPlugin,
 	ItemOnBuy,
@@ -49,6 +53,10 @@ public plugin_natives()
 	register_native("dr_shop_item_addition", "native_item_addition");
 	register_native("dr_shop_set_item_cost", "native_set_item_cost");
 }
+public ShopDisableItem()
+{
+	return ITEM_DISABLED;
+}
 /**
  *  native dr_shop_add_item(name[], cost, team = (ITEM_TEAM_T|ITEM_TEAM_CT), access = 0, on_buy[], can_buy[] = "");
  */
@@ -59,32 +67,34 @@ public native_add_item(plugin, params)
 		arg_name = 1,
 		arg_cost,
 		arg_team,
+		arg_cangift,
 		arg_access,
 		arg_onbuy,
 		arg_canbuy
 	};
 	
-	new eItemInfo[ShopItem];
-	
-	get_string(arg_name, eItemInfo[ItemName], charsmax(eItemInfo[ItemName]));
-	eItemInfo[ItemCost] = get_param(arg_cost);
-	eItemInfo[ItemTeam] = get_param(arg_team);
-	eItemInfo[ItemAccess] = get_param(arg_access);
-	eItemInfo[ItemPlugin] = plugin;
-	
-	new function[32]; get_string(arg_onbuy, function, charsmax(function));
-	eItemInfo[ItemOnBuy] = get_func_id(function, plugin);
-	
-	
-	get_string(arg_canbuy, function, charsmax(function));
-	
-	if(function[0])
+	new item_info[ShopItem];
 	{
-		// public CanBuyItem(id);
-		eItemInfo[ItemCanBuy] = CreateMultiForward(function, ET_CONTINUE, FP_CELL);
+		get_string(arg_name, item_info[ItemName], charsmax(item_info[ItemName]));
+		item_info[ItemCost] = get_param(arg_cost);
+		item_info[ItemTeam] = get_param(arg_team);
+		item_info[ItemCanGift] = get_param(arg_cangift);
+		item_info[ItemAccess] = get_param(arg_access);
+		item_info[ItemPlugin] = plugin;
+		
+		new function[32]; get_string(arg_onbuy, function, charsmax(function));
+		item_info[ItemOnBuy] = get_func_id(function, plugin);
+		
+		get_string(arg_canbuy, function, charsmax(function));
+		
+		if(function[0])
+		{
+			// public CanBuyItem(id);
+			item_info[ItemCanBuy] = CreateMultiForward(function, ET_CONTINUE, FP_CELL);
+		}
+		
+		ArrayPushArray(g_aShopItems, item_info);
 	}
-	
-	ArrayPushArray(g_aShopItems, eItemInfo);
 	g_iShopTotalItems++;
 	
 	return g_iShopTotalItems - 1;
@@ -102,23 +112,22 @@ public native_item_addition(plugin, params)
  */
 public native_set_item_cost(plugin, params)
 {
-	enum
-	{
-		arg_item = 1,
-		arg_cost
-	};
+	enum { arg_item = 1, arg_cost };
 	
 	new item = get_param(arg_item);
 	
-	if(item < 0 || item >= g_iShopTotalItems)
+	if (item < 0 || item >= g_iShopTotalItems)
 	{
 		log_error(AMX_ERR_NATIVE, "[DRS] Set item cost: wrong item index! index %d", item);
 		return 0;
 	}
 	
-	new eItemInfo[ShopItem]; ArrayGetArray(g_aShopItems, item, eItemInfo);
-	eItemInfo[ItemCost] = get_param(arg_cost);
-	ArraySetArray(g_aShopItems, item, eItemInfo);
+	new item_info[ShopItem];
+	{
+		ArrayGetArray(g_aShopItems, item, item_info);
+		item_info[ItemCost] = get_param(arg_cost);
+		ArraySetArray(g_aShopItems, item, item_info);
+	}
 	
 	return 1;
 }
@@ -128,73 +137,99 @@ public Command_Shop(id)
 }
 Show_ShopMenu(id, page)
 {
-	if(!g_iShopTotalItems) return;
+	if (!g_iShopTotalItems) return;
 	
-	new szText[64]; formatex(szText, charsmax(szText), "%L", id, "DRS_MENU_TITLE");
-	new menu = menu_create(szText, "ShopMenu_Handler");
+	new flags = get_user_flags(id);
+	new text[256], len; len = formatex(text, charsmax(text), "\d%L^n%L", id, "DRS_MENU_TITLE", id, "DRS_MENU_DISCOUNT", get_percent(flags));
+	new menu = menu_create(text, "ShopMenu_Handler");
 	
-	new hCallback, szNum[2], eItemInfo[ShopItem];
-	new team = (1 << _:cs_get_user_team(id));
-	
-	for(new i = 0; i < g_iShopTotalItems; i++)
+	new target = observer_target(id);
+	if (target != id)
 	{
-		g_szItemAddition = "";
-		ArrayGetArray(g_aShopItems, i, eItemInfo);
-		
-		if(~eItemInfo[ItemTeam] & team) continue;
-		
-		szNum[0] = i;
-		hCallback = (GetCanBuyAnswer(id, eItemInfo[ItemCanBuy]) == ITEM_ENABLED) ? -1 : g_hCallbackDisabled;
-		formatex(szText, charsmax(szText), "%s %s \R\y$%d", eItemInfo[ItemName], g_szItemAddition, eItemInfo[ItemCost]);
-		
-		menu_additem(menu, szText, szNum, eItemInfo[ItemAccess], hCallback);
+		formatex(text[len], charsmax(text) - len, "^n%L", id, "DRS_MENU_INFO");
 	}
 	
-	formatex(szText, charsmax(szText), "%L", id, "DRS_MENU_BACK");
-	menu_setprop(menu, MPROP_BACKNAME, szText);
-	formatex(szText, charsmax(szText), "%L", id, "DRS_MENU_NEXT");
-	menu_setprop(menu, MPROP_NEXTNAME, szText);
-	formatex(szText, charsmax(szText), "%L", id, "DRS_MENU_EXIT");
-	menu_setprop(menu, MPROP_EXITNAME, szText);
+	new szCanGift[5], hCallback, szNum[2], item_info[ShopItem];
+	new team = (1 << _:get_member(target, m_iTeam));
+	
+	for (new i = 0; i < g_iShopTotalItems; i++)
+	{
+		g_szItemAddition = "";
+		ArrayGetArray(g_aShopItems, i, item_info);
+		
+		if (~item_info[ItemTeam] & team) continue;
+		
+		szCanGift = "";
+		if (target != id && item_info[ItemCanGift])
+		{
+			szCanGift = " \r*";
+		}
+		
+		szNum[0] = i;
+		hCallback = (GetCanBuyAnswer(target, item_info[ItemCanBuy]) == ITEM_ENABLED) ? -1 : g_hCallbackDisabled;
+		formatex(text, charsmax(text), "%s %s \R\y$%d%s", item_info[ItemName], g_szItemAddition, get_discount(item_info[ItemCost], flags), szCanGift);
+		
+		menu_additem(menu, text, szNum, item_info[ItemAccess], hCallback);
+	}
+	
+	formatex(text, charsmax(text), "%L", id, "DRS_MENU_BACK");
+	menu_setprop(menu, MPROP_BACKNAME, text);
+	formatex(text, charsmax(text), "%L", id, "DRS_MENU_NEXT");
+	menu_setprop(menu, MPROP_NEXTNAME, text);
+	formatex(text, charsmax(text), "%L", id, "DRS_MENU_EXIT");
+	menu_setprop(menu, MPROP_EXITNAME, text);
 	
 	menu_display(id, menu, page);
 }
 public ShopMenu_Handler(id, menu, item)
 {
-	if(item == MENU_EXIT)
+	if (item == MENU_EXIT)
 	{
 		menu_destroy(menu);
 		return PLUGIN_HANDLED;
 	}
 	
 	new iAccess, szInfo[2], hCallback;
-	menu_item_getinfo(menu, item, iAccess, szInfo, charsmax(szInfo), _, _, hCallback);
+	menu_item_getinfo(menu, item, iAccess, szInfo, charsmax(szInfo), .callback = hCallback);
 	menu_destroy(menu);
 	
 	new item_index = szInfo[0];
-	new eItemInfo[ShopItem]; ArrayGetArray(g_aShopItems, item_index, eItemInfo);
+	new item_info[ShopItem]; ArrayGetArray(g_aShopItems, item_index, item_info);
 	
-	new team = (1 << _:cs_get_user_team(id));
+	new target = observer_target(id);
+	new team = (1 << _:get_member(target, m_iTeam));
 	
-	if((~eItemInfo[ItemTeam] & team) || GetCanBuyAnswer(id, eItemInfo[ItemCanBuy]) != ITEM_ENABLED)
+	if ((~item_info[ItemTeam] & team) || GetCanBuyAnswer(target, item_info[ItemCanBuy]) != ITEM_ENABLED)
 	{
-		client_print_color(id, print_team_default, "%s^1 %L", PREFIX, id, "DRS_CANT_BUY");
+		client_print_color(id, print_team_default, "%s^1 %L", PREFIX, id, "DRS_CHAT_CANT_BUY");
 		return PLUGIN_HANDLED;
 	}
 	
-	new money = cs_get_user_money(id) - eItemInfo[ItemCost];
+	new flags = get_user_flags(id);
+	new money = get_member(id, m_iAccount) - get_discount(item_info[ItemCost], flags);
 	
-	if(money < 0)
+	if (money < 0)
 	{
-		client_print_color(id, print_team_default, "%s^1 %L", PREFIX, id, "DRS_NEED_MORE_MONEY", -money);
+		client_print_color(id, print_team_default, "%s^1 %L", PREFIX, id, "DRS_CHAT_NEED_MORE_MONEY", -money);
 	}
 	else
 	{
-		cs_set_user_money(id, money);
+		new id_netname[32]; get_entvar(id, var_netname, id_netname, charsmax(id_netname));
+		if (target == id)
+		{
+			client_print_color(id, print_team_default, "%s^1 %L", PREFIX, id, "DRS_CHAT_BOUGHT_ITEM", item_info[ItemName], id_netname);
+		}
+		else
+		{
+			new target_netname[32]; get_entvar(target, var_netname, target_netname, charsmax(target_netname));
+			client_print_color(0, print_team_default, "%s^1 %L", PREFIX, id, "DRS_CHAT_BOUGHT_GIFT", id_netname, item_info[ItemName], target_netname);
+		}
+
+		set_member(id, m_iAccount, money);
 		
 		// public OnBuyItem(id);
-		callfunc_begin_i(eItemInfo[ItemOnBuy], eItemInfo[ItemPlugin]);
-		callfunc_push_int(id);
+		callfunc_begin_i(item_info[ItemOnBuy], item_info[ItemPlugin]);
+		callfunc_push_int(target);
 		callfunc_end();
 	}
 	
@@ -203,11 +238,42 @@ public ShopMenu_Handler(id, menu, item)
 }
 GetCanBuyAnswer(id, callback)
 {
-	if(!callback) return ITEM_ENABLED;
+	if (!callback) return ITEM_ENABLED;
 	new return_value; ExecuteForward(callback, return_value, id);
 	return return_value;
 }
-public ShopDisableItem()
+get_discount(cost = 0, flags = 0)
 {
-	return ITEM_DISABLED;
+	new percent = get_percent(flags);
+	
+	if (cost > 0 && percent > 0)
+	{
+		cost -= (cost * percent / 100);
+	}
+	
+	return cost;
+}
+get_percent(flags = 0)
+{
+	if (flags > 0 && !(flags & ADMIN_USER))
+	{
+		return ADMIN_DISCOUNT;
+	}
+	
+	new percent = 0;
+	new hours; time(.hour = hours);
+	{
+		switch (hours)
+		{
+			case 0..6: percent = 25;
+			case 7..12: percent = 15;
+			case 19..23: percent = 10;
+		}
+	}
+	return percent;
+}
+stock observer_target(id)
+{
+	new iSpecmode = get_entvar(id, var_iuser1);
+	return (iSpecmode == OBS_CHASE_LOCKED || iSpecmode == OBS_CHASE_FREE || iSpecmode == OBS_IN_EYE) ? get_entvar(id, var_iuser2) : id;
 }
