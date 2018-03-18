@@ -233,37 +233,7 @@ public client_disconnected(id)
 		new iPlayers[32], pnum;	pnum = rg_get_players(iPlayers, true, true);
 		if (pnum > 1)
 		{
-			g_iCurrTer = iPlayers[random(pnum)];
-			rg_set_user_team(g_iCurrTer, TEAM_TERRORIST);
-			rg_round_respawn(g_iCurrTer);
-
-			new Float:fOrigin[3]; 
-			{
-				get_entvar(id, var_origin, fOrigin);
-				set_entvar(g_iCurrTer, var_origin, fOrigin);
-			}
-			
-			// In case he was sitting in a low space
-			if (get_entvar(id, var_bInDuck))
-			{
-				set_entvar(g_iCurrTer, var_bInDuck, true);
-			}
-			
-			// In case he was flying over the precipice or something else
-			new Float:fVelocity[3];
-			{
-				get_entvar(id, var_velocity, fVelocity);
-				set_entvar(g_iCurrTer, var_velocity, fVelocity);
-			}
-
-			new Float:fAngles[3];
-			{
-				get_entvar(id, var_angles, fAngles);
-				set_entvar(g_iCurrTer, var_angles, fAngles);
-			}
-			set_entvar(g_iCurrTer, var_fixangle, 1);
-			
-			ExecuteForward(g_iForwards[FW_NEW_TERRORIST], g_iReturn, g_iCurrTer);
+			g_iCurrTer = ReplaceTer(iPlayers[random(pnum)]);
 			
 			new szName[32]; get_entvar(g_iCurrTer, var_netname, szName, charsmax(szName));
 			new szNameLeaver[32]; get_entvar(id, var_netname, szNameLeaver, charsmax(szNameLeaver));
@@ -283,6 +253,49 @@ public client_disconnected(id)
 			rg_set_user_team(g_iCurrTer, TEAM_CT);
 		}
 	}
+}
+ReplaceTer(NewTer)
+{
+	if (is_user_connected(g_iNextTer) || NewTer == g_iNextTer)
+	{
+		NewTer = g_iNextTer;
+		g_iNextTer = 0;
+	}
+	
+	rg_set_user_team(NewTer, TEAM_TERRORIST);
+	
+	if(!is_user_alive(NewTer))
+	{
+		rg_round_respawn(NewTer);
+	}
+	
+	new Float:origin[3]; 
+	{
+		get_entvar(g_iCurrTer, var_origin, origin);
+		set_entvar(NewTer, var_origin, origin);
+	}
+	
+	if (get_entvar(g_iCurrTer, var_bInDuck))
+	{
+		set_entvar(NewTer, var_bInDuck, true);
+	}
+	
+	new Float:velocity[3];
+	{
+		get_entvar(g_iCurrTer, var_velocity, velocity);
+		set_entvar(NewTer, var_velocity, velocity);
+	}
+	
+	new Float:angles[3];
+	{
+		get_entvar(g_iCurrTer, var_angles, angles);
+		set_entvar(NewTer, var_angles, angles);
+	}
+	set_entvar(NewTer, var_fixangle, 1);
+	
+	ExecuteForward(g_iForwards[FW_NEW_TERRORIST], g_iReturn, NewTer);
+	
+	return NewTer;
 }
 //******** Commands ********//
 public Command_ChooseTeam(id)
