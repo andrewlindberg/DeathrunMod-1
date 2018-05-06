@@ -6,6 +6,7 @@
 #if AMXX_VERSION_NUM < 183
 #include <colorchat>
 #include <dhudmessage>
+#define client_disconnected client_disconnect
 #endif
 
 #define PLUGIN "Deathrun: Informer"
@@ -70,7 +71,7 @@ public client_putinserver(id)
 	g_bSpeed[id] = true;
 	g_iConnectedCount++;
 }
-public client_disconnect(id)
+public client_disconnected(id)
 {
 	g_bConnected[id] = false;
 	g_bAlive[id] = false;
