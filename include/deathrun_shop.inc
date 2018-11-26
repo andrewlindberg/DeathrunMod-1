@@ -21,7 +21,7 @@ const ITEM_TEAM_CT = (1 << 2);
  * @param name			Item name in menu
  * @param cost			Item cost
  * @param team			Team access, bitsum, use ITEM_TEAM_T, ITEM_TEAM_CT
- * @param can_gift		One can gift, 1 - yes, 0 - not
+ * @param can_gift		One can gift, 1 - yes, 0 - no
  * @param access		Admin access, admin flags
  * @param on_buy		OnBuy function(id)
  * @param can_buy		CanBuy function(id), should return ITEM_ENABLED or ITEM_DISABLED
