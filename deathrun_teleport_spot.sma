@@ -1,10 +1,9 @@
 #include <amxmodx>
 #include <engine>
-#include <fakemeta>
-#include <hamsandwich>
+#include <reapi>
 
 #define PLUGIN "Deathrun: Teleport Spot"
-#define VERSION "1.0.2"
+#define VERSION "Re 1.0.2"
 #define AUTHOR "Mistrick"
 
 #pragma semicolon 1
@@ -13,7 +12,6 @@
 #define TP_CHECK_DISTANCE 64.0
 
 #define IsPlayer(%1) (%1 && %1 <= g_iMaxPlayers)
-#define fm_get_user_team(%0) get_pdata_int(%0, 114)
 
 new player_solid[33], g_iMaxPlayers;
 
@@ -21,47 +19,50 @@ public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 	
-	new ent = find_ent_by_class(-1, "info_teleport_destination");
+	new ent = rg_find_ent_by_class(-1, "info_teleport_destination");
 	
-	if(!pev_valid(ent))
+	if(!is_entity(ent))
 	{
 		log_amx("Map doesn't have any teleports.");
 		pause("a"); return;
 	}
 	
-	RegisterHam(Ham_TakeDamage, "player", "Ham_PlayerTakeDamage_Pre", false);
-	g_iMaxPlayers = get_maxplayers();
+	RegisterHookChain(RG_CBasePlayer_TakeDamage, "CBasePlayer_TakeDamage_Pre", 0);
+	
+	g_iMaxPlayers = get_member_game(m_nMaxPlayers);
 }
-public Ham_PlayerTakeDamage_Pre(victim, idinflictor, attacker, Float:damage, damagebits)
+public CBasePlayer_TakeDamage_Pre(const this, pevInflictor, pevAttacker, Float:flDamage, bitsDamageType)
 {
-	if(victim != attacker && IsPlayer(attacker) && fm_get_user_team(victim) != fm_get_user_team(attacker))
+	if(this != pevAttacker && IsPlayer(pevAttacker) && get_member(this, m_iTeam) != get_member(pevAttacker, m_iTeam))
 	{
-		new Float:origin[3]; pev(victim, pev_origin, origin);
+		new Float:origin[3]; get_entvar(this, var_origin, origin);
 		new ent = -1;
 		while((ent = find_ent_in_sphere(ent, origin, TP_CHECK_DISTANCE)))
 		{
-			new class_name[32]; pev(ent, pev_classname, class_name, charsmax(class_name));
-			if(equal(class_name, "info_teleport_destination"))
+			new classname[32]; get_entvar(ent, var_classname, classname, charsmax(classname));
+			if(equal(classname, "info_teleport_destination"))
 			{
-				#if defined RETURN_DAMAGE_TO_ATTACKER
-				ExecuteHamB(Ham_TakeDamage, attacker, 0, attacker, damage, damagebits);
-				#endif
+				if(is_user_alive(pevAttacker)) slap(pevAttacker);
+				if(is_user_alive(this)) slap(this);
 
-				if(is_user_alive(attacker)) slap(attacker);
-				if(is_user_alive(victim)) slap(victim);
-
-				return HAM_SUPERCEDE;
+#if defined RETURN_DAMAGE_TO_ATTACKER
+				SetHookChainArg(1, ATYPE_INTEGER, pevAttacker);
+				SetHookChainArg(3, ATYPE_INTEGER, this);
+#else
+				SetHookChainReturn(ATYPE_INTEGER, 0);
+				return HC_SUPERCEDE;
+#endif
 			}
 		}
 	}
-	return HAM_IGNORED;
+	return HC_CONTINUE;
 }
 slap(id)
 {
-	new solid = pev(id, pev_solid);
+	new solid = get_entvar(id, var_solid);
 	if(solid != SOLID_NOT) player_solid[id] = solid;
 	
-	set_pev(id, pev_solid, SOLID_NOT);
+	set_entvar(id, var_solid, SOLID_NOT);
 	
 	user_slap(id, 0);
 	user_slap(id, 0);
@@ -71,5 +72,5 @@ slap(id)
 }
 public restore_solid(id)
 {
-	if(is_user_alive(id)) set_pev(id, pev_solid, player_solid[id]);
+	if(is_user_alive(id)) set_entvar(id, var_solid, player_solid[id]);
 }
