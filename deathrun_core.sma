@@ -15,9 +15,10 @@
 
 #pragma semicolon 1
 
-#define IsPlayer(%1) (%1 && %1 <= g_iMaxPlayers)
+#define IsPlayer(%1) (%1 && %1 <= MaxClients)
 
 #define WARMUP_TIME 20
+#define RESTART_TIME 5
 
 enum _:Cvars
 {
@@ -37,6 +38,8 @@ enum _:Cvars
 	FORCERESPAWN,
 	RADIOICON,
 	ALLTALK,
+	RESPAWN_IMMUNITYTIME,
+	KILL_FILLED_SPAWN,
 	ENT_INTERSECTION,
 	RESTART
 };
@@ -52,8 +55,8 @@ new const PREFIX[] = "^3[^4Royal Project^3]";
 
 new g_eCvars[Cvars], g_iForwards[Forwards], g_iReturn, g_bWarmUp = true;
 new g_iForwardSpawn, Trie:g_tRemoveEntities;
-new g_msgAmmoPickup, g_msgWeapPickup;
-new g_iOldAmmoPickupBlock, g_iOldWeapPickupBlock, g_iCurrTer, g_iNextTer, g_iMaxPlayers;
+new g_msgSendAudio, g_msgAmmoPickup, g_msgWeapPickup;
+new g_iOldAmmoPickupBlock, g_iOldWeapPickupBlock, g_iCurrTer, g_iNextTer;
 
 public plugin_init()
 {
@@ -78,6 +81,8 @@ public plugin_init()
 	g_eCvars[FORCERESPAWN] = get_cvar_pointer("mp_forcerespawn");
 	g_eCvars[RADIOICON] = get_cvar_pointer("mp_show_radioicon");
 	g_eCvars[ALLTALK] = get_cvar_pointer("sv_alltalk");
+	g_eCvars[RESPAWN_IMMUNITYTIME] = get_cvar_pointer("mp_respawn_immunitytime");
+	g_eCvars[KILL_FILLED_SPAWN] = get_cvar_pointer("mp_kill_filled_spawn");
 	g_eCvars[ENT_INTERSECTION] = get_cvar_pointer("sv_force_ent_intersection");
 	g_eCvars[RESTART] = get_cvar_pointer("sv_restart");
 	
@@ -85,6 +90,7 @@ public plugin_init()
 	
 	RegisterHam(Ham_Use, "func_button", "Ham_UseButton_Pre", 0);
 	
+	RegisterHookChain(RG_RoundEnd, "RoundEnd_Pre", 0);
 	RegisterHookChain(RG_ShowVGUIMenu, "ShowVGUIMenu_Pre", 0);
 	RegisterHookChain(RG_CBasePlayer_Spawn, "CBasePlayer_Spawn_Pre", 0);
 	RegisterHookChain(RG_CBasePlayer_Spawn, "CBasePlayer_Spawn_Post", 1);
@@ -100,6 +106,7 @@ public plugin_init()
 	g_iForwards[FW_NEXT_TERRORIST] = CreateMultiForward("dr_chosen_next_terrorist", ET_IGNORE, FP_CELL);
 	g_iForwards[FW_WARMUP] = CreateMultiForward("dr_warm_up", ET_IGNORE, FP_CELL);
 	
+	g_msgSendAudio = get_user_msgid("SendAudio");
 	g_msgAmmoPickup = get_user_msgid("AmmoPickup");
 	g_msgWeapPickup = get_user_msgid("WeapPickup");
 	
@@ -108,24 +115,22 @@ public plugin_init()
 	
 	Block_Commands();
 	CheckMap();
-	
-	g_iMaxPlayers = get_member_game(m_nMaxPlayers);
 }
 CheckMap()
 {
 	new ent = rg_find_ent_by_class(-1, "info_player_deathmatch");
 	
-	if (is_entity(ent))
+	if(is_entity(ent))
 	{
-		RegisterHookChain(RG_CSGameRules_RestartRound, "CSGameRules_RestartRound_Pre", false);
-		RegisterHookChain(RG_CSGameRules_RestartRound, "CSGameRules_RestartRound_Post", true);
+		RegisterHookChain(RG_CSGameRules_RestartRound, "CSGameRules_RestartRound_Pre", 0);
+		RegisterHookChain(RG_CSGameRules_RestartRound, "CSGameRules_RestartRound_Post", 1);
 	}
 	
 	ent = -1;
 	while ((ent = engfunc(EngFunc_FindEntityByString, ent, "classname", "func_door")))
 	{
 		new spawnflags = get_entvar(ent, var_spawnflags);
-		if ((spawnflags & SF_DOOR_USE_ONLY) && UTIL_IsTargetActivate(ent))
+		if((spawnflags & SF_DOOR_USE_ONLY) && UTIL_IsTargetActivate(ent))
 		{
 			set_entvar(ent, var_spawnflags, spawnflags & ~SF_DOOR_USE_ONLY);
 		}
@@ -139,7 +144,7 @@ public plugin_precache()
 		"hostage_entity", "info_bomb_target", "func_buyzone","info_hostage_rescue", "monster_scientist"
 	};
 	g_tRemoveEntities = TrieCreate();
-	for (new i = 0; i < sizeof(szRemoveEntities); i++)
+	for(new i = 0; i < sizeof(szRemoveEntities); i++)
 	{
 		TrieSetCell(g_tRemoveEntities, szRemoveEntities[i], i);
 	}
@@ -148,14 +153,11 @@ public plugin_precache()
 }
 public FakeMeta_Spawn_Pre(ent)
 {
-	if (!is_entity(ent)) return FMRES_IGNORED;
+	if(!is_entity(ent)) return FMRES_IGNORED;
 	
-	static szClassName[32]; 
-	{
-		get_entvar(ent, var_classname, szClassName, charsmax(szClassName));
-	}
+	static szClassName[32]; get_entvar(ent, var_classname, szClassName, charsmax(szClassName));
 	
-	if (TrieKeyExists(g_tRemoveEntities, szClassName))
+	if(TrieKeyExists(g_tRemoveEntities, szClassName))
 	{
 		engfunc(EngFunc_RemoveEntity, ent);
 		return FMRES_SUPERCEDE;
@@ -180,11 +182,12 @@ public plugin_cfg()
 	set_pcvar_num(g_eCvars[FORCERESPAWN], 1);
 	set_pcvar_num(g_eCvars[RADIOICON], 0);
 	set_pcvar_num(g_eCvars[ALLTALK], 1);
+	set_pcvar_num(g_eCvars[RESPAWN_IMMUNITYTIME], 5);
+	set_pcvar_num(g_eCvars[KILL_FILLED_SPAWN], 0);
 	set_pcvar_num(g_eCvars[ENT_INTERSECTION], 1);
-
 	set_pcvar_num(g_eCvars[RESTART], WARMUP_TIME);
+	
 	ExecuteForward(g_iForwards[FW_WARMUP], g_iReturn, WARMUP_TIME);
-
 }
 public plugin_natives()
 {
@@ -201,7 +204,7 @@ public native_set_next_terrorist(plugin, params)
 {
 	enum { arg_player = 1 };
 	new id = get_param(arg_player);
-	if (1 < id > MAX_CLIENTS)
+	if(!IsPlayer(id))
 	{
 		log_error(AMX_ERR_NATIVE, "[DRM] Set next terrorist: wrong player index! index %d", id);
 		return 0;
@@ -217,21 +220,25 @@ public native_get_next_terrorist()
 }
 public client_putinserver(id)
 {
-	if (!g_bWarmUp && !is_user_connected(g_iCurrTer))
+	if(!g_bWarmUp && !is_user_connected(g_iCurrTer))
 	{
-		new iPlayers[32], pnum;	pnum = rg_get_players(iPlayers);
-		if (pnum == 1)
-		{
-			rg_round_end(5.0, WINSTATUS_NONE, ROUND_GAME_RESTART, "Подключение игрока завершено!");
-		}
+		set_task(5.0, "Task_CheckToConnect");
+	}
+}
+public Task_CheckToConnect()
+{
+	new iPlayers[32], pnum;	pnum = rg_get_players(iPlayers);
+	if(pnum > 1)
+	{
+		rg_round_end(RESTART_TIME.0, WINSTATUS_DRAW, ROUND_GAME_COMMENCE, "Подключение игрока завершено!", .trigger = true);
 	}
 }
 public client_disconnected(id)
 {
-	if (id == g_iCurrTer)
+	if(id == g_iCurrTer)
 	{
 		new iPlayers[32], pnum;	pnum = rg_get_players(iPlayers, true, true);
-		if (pnum > 1)
+		if(pnum > 1)
 		{
 			g_iCurrTer = ReplaceTer(iPlayers[random(pnum)]);
 			
@@ -241,28 +248,28 @@ public client_disconnected(id)
 		}
 		else
 		{
-			rg_round_end(5.0, WINSTATUS_DRAW, ROUND_END_DRAW, "Террорист покинул сервер!");
+			g_iCurrTer = 0;
+			rg_round_end(RESTART_TIME.0, WINSTATUS_DRAW, ROUND_END_DRAW, "Террорист покинул сервер!", .sentence = "\0");
 		}
 	}
 	
 	if(is_user_connected(g_iCurrTer))
 	{
-		new iPlayers[32], pnum;	pnum = rg_get_players(iPlayers, .skip_ter = true);
-		if(!pnum)
-		{
-			rg_set_user_team(g_iCurrTer, TEAM_CT);
-		}
+		set_task(5.0, "Task_CheckLastPlayer");
 	}
 }
 ReplaceTer(NewTer)
 {
-	if (is_user_connected(g_iNextTer) || NewTer == g_iNextTer)
+	if(is_user_connected(g_iNextTer) || NewTer == g_iNextTer)
 	{
 		NewTer = g_iNextTer;
 		g_iNextTer = 0;
 	}
 	
-	rg_set_user_team(NewTer, TEAM_TERRORIST);
+	if(is_user_connected(NewTer)) 
+	{
+		rg_set_user_team(NewTer, TEAM_TERRORIST);
+	}
 	
 	if(!is_user_alive(NewTer))
 	{
@@ -270,32 +277,35 @@ ReplaceTer(NewTer)
 	}
 	
 	new Float:origin[3]; 
-	{
-		get_entvar(g_iCurrTer, var_origin, origin);
-		set_entvar(NewTer, var_origin, origin);
-	}
+	get_entvar(g_iCurrTer, var_origin, origin);
+	set_entvar(NewTer, var_origin, origin);
 	
-	if (get_entvar(g_iCurrTer, var_bInDuck))
+	new Float:velocity[3];
+	get_entvar(g_iCurrTer, var_velocity, velocity);
+	set_entvar(NewTer, var_velocity, velocity);
+	
+	new Float:angles[3];
+	get_entvar(g_iCurrTer, var_angles, angles);
+	set_entvar(NewTer, var_angles, angles);
+	set_entvar(NewTer, var_fixangle, 1);
+	
+	if(get_entvar(g_iCurrTer, var_bInDuck))
 	{
 		set_entvar(NewTer, var_bInDuck, true);
 	}
 	
-	new Float:velocity[3];
-	{
-		get_entvar(g_iCurrTer, var_velocity, velocity);
-		set_entvar(NewTer, var_velocity, velocity);
-	}
-	
-	new Float:angles[3];
-	{
-		get_entvar(g_iCurrTer, var_angles, angles);
-		set_entvar(NewTer, var_angles, angles);
-	}
-	set_entvar(NewTer, var_fixangle, 1);
-	
 	ExecuteForward(g_iForwards[FW_NEW_TERRORIST], g_iReturn, NewTer);
 	
 	return NewTer;
+}
+public Task_CheckLastPlayer()
+{
+	new iPlayers[32], pnum;	pnum = rg_get_players(iPlayers, .skip_ter = true);
+	if(pnum < 1 && rg_set_user_team(g_iCurrTer, TEAM_CT))
+	{
+		g_iCurrTer = 0;
+		rg_round_end(RESTART_TIME.0, WINSTATUS_DRAW, ROUND_END_DRAW, "Вы последний игрок на сервере!", .sentence = "\0");
+	}
 }
 //******** Commands ********//
 public Command_ChooseTeam(id)
@@ -344,10 +354,19 @@ Float:get_player_eyes_origin(id)
 	new Float:origin[3]; IVecFVec(eyes_origin, origin);
 	return origin;
 }
-// ******* Re GameDll *******
+// ******* ReGameDll *******
+public RoundEnd_Pre(WinStatus:status, ScenarioEventEndRound:event, Float:tmDelay)
+{
+	if(ROUND_CTS_WIN < event > ROUND_END_DRAW) return HC_CONTINUE;
+	
+	set_msg_block(g_msgSendAudio, BLOCK_ONCE);
+	
+	return HC_CONTINUE;
+}
 public ShowVGUIMenu_Pre(const index, VGUIMenu:menuType, const bitsSlots, szOldMenu[])
 {
-    return (VGUI_Menu_Team >= menuType <= VGUI_Menu_Buy_Item) ? HC_BREAK : HC_CONTINUE;
+	SetHookChainReturn(ATYPE_INTEGER, false);
+	return HC_SUPERCEDE;
 }
 public CBasePlayer_Spawn_Pre(const this)
 {
@@ -363,7 +382,7 @@ public CBasePlayer_Spawn_Post(const this)
 	
 	if(!is_user_alive(this)) return HC_CONTINUE;
 	
-	block_user_radio(this);
+	rg_block_user_radio(this);
 	
 	rg_remove_items_by_slot(this, PRIMARY_WEAPON_SLOT);
 	rg_remove_items_by_slot(this, GRENADE_SLOT);
@@ -379,7 +398,7 @@ public CBasePlayer_TakeDamage_Pre(const this, pevInflictor, pevAttacker, Float:f
 {
 	if(flDamage < 0.0)
 	{
-		SetHookChainReturn(ATYPE_INTEGER, 0);
+		SetHookChainReturn(ATYPE_INTEGER, false);
 		return HC_SUPERCEDE;
 	}
 	
@@ -387,7 +406,7 @@ public CBasePlayer_TakeDamage_Pre(const this, pevInflictor, pevAttacker, Float:f
 }
 public CSGameRules_FlPlayerFallDamage_Pre(const index)
 {
-	if (get_pcvar_num(g_eCvars[BLOCK_FALLDMG]) && get_member(index, m_iTeam) == TEAM_TERRORIST)
+	if(get_pcvar_num(g_eCvars[BLOCK_FALLDMG]) && get_member(index, m_iTeam) == TEAM_TERRORIST)
 	{
 		// Remove the damage to the terrorist when falling from height
 		SetHookChainReturn(ATYPE_FLOAT, 0.0);
@@ -429,11 +448,8 @@ TeamBalance()
 	}
 	
 	rg_set_user_team(g_iCurrTer, TEAM_TERRORIST);
-	new szName[32]; 
-	{
-		get_entvar(g_iCurrTer, var_netname, szName, charsmax(szName));
-		client_print_color(0, print_team_red, "%s %L", PREFIX, LANG_PLAYER, "DRC_BECAME_TERRORIST", szName);
-	}
+	new szName[32]; get_entvar(g_iCurrTer, var_netname, szName, charsmax(szName));
+	client_print_color(0, print_team_red, "%s %L", PREFIX, LANG_PLAYER, "DRC_BECAME_TERRORIST", szName);
 }
 public CSGameRules_RestartRound_Post()
 {
@@ -457,7 +473,7 @@ public FM_ClientKill_Pre(id)
 // ******* Engine *******
 public Engine_TouchFuncDoor(ent, toucher)
 {
-	if(is_valid_ent(toucher))
+	if(is_entity(toucher))
 	{
 		remove_entity(toucher);
 	}
@@ -466,21 +482,21 @@ public Engine_TouchFuncDoor(ent, toucher)
 stock rg_get_players(players[32], bool:alive = false, skip_ter = false)
 {
 	new TeamName:team, count;
-	for(new i = 1; i <= g_iMaxPlayers; i++)
+	for(new i = 1; i <= MaxClients; i++)
 	{
-		if(skip_ter && i == g_iCurrTer 
-		|| !is_user_connected(i) 
+		if(!is_user_connected(i) 
+		|| skip_ter && i == g_iCurrTer 
 		|| alive && !is_user_alive(i)) continue;
+		
 		team = get_member(i, m_iTeam);
 		if(TEAM_TERRORIST < team > TEAM_CT) continue;
 		players[count++] = i;
 	}
 	return count;
 }
-stock block_user_radio(id)
+stock rg_block_user_radio(id)
 {
-	const m_iRadiosLeft = 192;
-	set_pdata_int(id, m_iRadiosLeft, 0);
+	set_member(id, m_iRadioMessages, 0);
 }
 stock bool:allow_press_button(ent, Float:start[3], Float:end[3], bool:ignore_players = true)
 {
