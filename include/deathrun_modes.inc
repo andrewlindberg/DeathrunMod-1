@@ -34,7 +34,7 @@ enum _:ModeData
  * Mode registration.
  *
  * @param Name				Mode name, use ML key.
- * @param Info				Mode description, use ML key.
+ * @param Hud				Mode description, use ML key.
  * @param Mark				Mode mark, use this to get mode index in other plugins.
  * @param RoundDelay		Mode blocking in rounds.
  * @param CT_BlockWeapons	Allow CT pick up weapons.
@@ -47,7 +47,7 @@ enum _:ModeData
  *
  * @return					Mode index.
  */
-native dr_register_mode(Name[32], Info[64] = "", Mark[16], RoundDelay, CT_BlockWeapons, TT_BlockWeapons, CT_BlockButtons, TT_BlockButtons, Bhop, Usp, Hide = 0);
+native dr_register_mode(Name[32], Hud[64], Mark[16], RoundDelay, CT_BlockWeapons, TT_BlockWeapons, CT_BlockButtons, TT_BlockButtons, Bhop, Usp, Hide = 0);
 
 /**
  * Get current mode.

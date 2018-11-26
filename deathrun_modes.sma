@@ -22,7 +22,7 @@
 #define DEFAULT_USP 1
 #define TIMER 15
 
-#define IsPlayer(%1) (%1 && %1 <= g_iMaxPlayers)
+#define IsPlayer(%1) (%1 && %1 <= MaxClients)
 
 enum (+=100)
 {
@@ -37,7 +37,6 @@ new Array:g_aModes, g_iModesNum;
 
 new g_eCurModeInfo[ModeData];
 new g_iCurMode = NONE_MODE;
-new g_iMaxPlayers;
 
 new g_iPage[33], g_iTimer[33], bool:g_bBhop[33];
 
@@ -53,22 +52,18 @@ public plugin_init()
 	
 	register_clcmd("say /bhop", "Command_Bhop");
 	
-	RegisterHam(Ham_Touch, "weaponbox", "Ham_TouchItems_Pre", 0);
-	RegisterHam(Ham_Touch, "armoury_entity", "Ham_TouchItems_Pre", 0);
-	RegisterHam(Ham_Touch, "weapon_shield", "Ham_TouchItems_Pre", 0);
 	RegisterHam(Ham_Use, "func_button", "Ham_UseButtons_Pre", 0);
 	
+	RegisterHookChain(RG_RoundEnd, "RoundEnd_Post", 1);
+	RegisterHookChain(RG_CSGameRules_RestartRound, "CSGameRules_RestartRound_Pre", 0);
+	RegisterHookChain(RG_CBasePlayer_HasRestrictItem, "CBasePlayer_HasRestrictItem_Pre", 0);
 	RegisterHookChain(RG_CBasePlayer_Jump, "CBasePlayer_Jump_Pre", 0);
 	RegisterHookChain(RG_CBasePlayer_Spawn, "CBasePlayer_Spawn_Post", 1);
-	
-	register_event("HLTV", "Event_NewRound", "a", "1=0", "2=0");
-	register_event("TextMsg", "Event_Restart", "a", "2=#Game_Commencing", "2=#Game_will_restart_in");
 	
 	register_menucmd(register_menuid("ModesMenu"), 1023, "ModesMenu_Handler");
 	
 	g_fwSelectedMode = CreateMultiForward("dr_selected_mode", ET_IGNORE, FP_CELL, FP_CELL);
 	g_hDisableItem = menu_makecallback("DisableItem");
-	g_iMaxPlayers = get_maxplayers();
 	
 	g_eCurModeInfo[m_Name] = "DRM_MODE_NONE";
 	g_eCurModeInfo[m_Bhop] = DEFAULT_BHOP;
@@ -212,8 +207,11 @@ public native_get_mode_info(plugin, params)
 		return 0;
 	}
 	
-	new mode_info[ModeData]; ArrayGetArray(g_aModes, mode_index, mode_info);
-	set_array(arg_info, mode_info, ModeData);
+	new mode_info[ModeData]; 
+	{
+		ArrayGetArray(g_aModes, mode_index, mode_info);
+		set_array(arg_info, mode_info, ModeData);
+	}
 	
 	return 1;
 }
@@ -237,7 +235,7 @@ public native_set_user_bhop(plugin, params)
 	
 	new player = get_param(arg_player_id);
 	
-	if (player < 1 || player > g_iMaxPlayers)
+	if (player < 1 || player > MaxClients)
 	{
 		log_error(AMX_ERR_NATIVE, "[DRM] Set user bhop: wrong player index! index %d", player);
 		return 0;
@@ -253,7 +251,7 @@ public bool:native_get_user_bhop(id)
 	
 	new player = get_param(arg_player_id);
 	
-	if (player < 1 || player > g_iMaxPlayers)
+	if (player < 1 || player > MaxClients)
 	{
 		log_error(AMX_ERR_NATIVE, "[DRM] Get user bhop: wrong player index! index %d", player);
 		return false;
@@ -281,8 +279,42 @@ public Command_Bhop(id)
 	
 	return PLUGIN_CONTINUE;
 }
-//***** Events *****//
-public Event_NewRound()
+//***** Ham *****//
+public Ham_UseButtons_Pre(ent, caller, activator, use_type)
+{
+	if (!IsPlayer(activator))
+	{
+		return HAM_IGNORED;
+	}
+	
+	new TeamName:team = get_member(activator, m_iTeam);
+	
+	if (team == TEAM_TERRORIST && g_eCurModeInfo[m_TT_BlockButtons] || team == TEAM_CT && g_eCurModeInfo[m_CT_BlockButtons])
+	{
+		return HAM_SUPERCEDE;
+	}
+	
+	return HAM_IGNORED;
+}
+//***** ReGameDll *****//
+public RoundEnd_Post(WinStatus:status, ScenarioEventEndRound:event, Float:tmDelay)
+{
+	if(ROUND_GAME_RESTART > event < ROUND_GAME_COMMENCE) 
+	{
+		return HC_CONTINUE;
+	}
+	
+	new mode_info[ModeData];
+	for (new i = 0; i < g_iModesNum; i++)
+	{
+		ArrayGetArray(g_aModes, i, mode_info);
+		mode_info[m_CurDelay] = 0;
+		ArraySetArray(g_aModes, i, mode_info);
+	}
+	
+	return HC_CONTINUE;
+}
+public CSGameRules_RestartRound_Pre()
 {
 	g_iCurMode = NONE_MODE;
 	g_eCurModeInfo[m_Name] = "DRM_MODE_NONE";
@@ -305,55 +337,28 @@ public Event_NewRound()
 			ArraySetArray(g_aModes, i, mode_info);
 		}
 	}
-	for (new id = 1; id <= g_iMaxPlayers; id++)
+	for (new id = 1; id <= MaxClients; id++)
 	{
 		remove_task(id + TASK_SHOWMENU);
 	}
 }
-public Event_Restart()
+public CBasePlayer_HasRestrictItem_Pre(const this, ItemID:item, ItemRestType:type)
 {
-	new mode_info[ModeData];
-	for (new i = 0; i < g_iModesNum; i++)
+	if (!IsPlayer(this) || g_iCurMode == NONE_MODE)
 	{
-		ArrayGetArray(g_aModes, i, mode_info);
-		mode_info[m_CurDelay] = 0;
-		ArraySetArray(g_aModes, i, mode_info);
-	}
-}
-//***** Ham *****//
-public Ham_UseButtons_Pre(ent, caller, activator, use_type)
-{
-	if (!IsPlayer(activator))
-	{
-		return HAM_IGNORED;
+		return HC_CONTINUE;
 	}
 	
-	new TeamName:team = get_member(activator, m_iTeam);
-	
-	if (team == TEAM_TERRORIST && g_eCurModeInfo[m_TT_BlockButtons] || team == TEAM_CT && g_eCurModeInfo[m_CT_BlockButtons])
-	{
-		return HAM_SUPERCEDE;
-	}
-	
-	return HAM_IGNORED;
-}
-public Ham_TouchItems_Pre(ent, id)
-{
-	if (!IsPlayer(id) || g_iCurMode == NONE_MODE)
-	{
-		return HAM_IGNORED;
-	}
-	
-	new TeamName:team = get_member(id, m_iTeam);
+	new TeamName:team = get_member(this, m_iTeam);
 	
 	if (team == TEAM_TERRORIST && g_eCurModeInfo[m_TT_BlockWeapon] || team == TEAM_CT && g_eCurModeInfo[m_CT_BlockWeapon])
 	{
-		return HAM_SUPERCEDE;
+		SetHookChainReturn(ATYPE_INTEGER, 1);
+		return HC_SUPERCEDE;
 	}
 	
-	return HAM_IGNORED;
+	return HC_CONTINUE;
 }
-//***** ReApi *****//
 public CBasePlayer_Jump_Pre(const this)
 {	
 	if (!g_eCurModeInfo[m_Bhop] || !g_bBhop[this])
@@ -390,15 +395,12 @@ public CBasePlayer_Spawn_Post(const this)
 	rh_set_user_rendering(this);
 	
 	new TeamName:team = get_member(this, m_iTeam);
+	rg_remove_items_by_slot(this, PISTOL_SLOT);
 	
-	if (g_eCurModeInfo[m_Usp])
+	if (g_eCurModeInfo[m_Usp] && team == TEAM_CT)
 	{
-		rg_remove_items_by_slot(this, PISTOL_SLOT);
-		if (team == TEAM_CT)
-		{
-			rg_give_item(this, "weapon_usp");
-			rg_set_user_bpammo(this, WEAPON_USP, 100);
-		}
+		rg_give_item(this, "weapon_usp");
+		rg_set_user_bpammo(this, WEAPON_USP, 100);
 	}
 	
 	if (g_iCurMode != NONE_MODE || team != TEAM_TERRORIST)
