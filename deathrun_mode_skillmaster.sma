@@ -1,7 +1,5 @@
 #include <amxmodx>
-#include <cstrike>
 #include <engine>
-#include <fakemeta>
 #include <hamsandwich>
 #include <deathrun_core>
 #include <deathrun_modes>
@@ -13,10 +11,8 @@
 #pragma semicolon 1
 
 #define PLUGIN "Deathrun Mode: Skill Master"
-#define VERSION "1.0.1"
+#define VERSION "Re 1.0.1"
 #define AUTHOR "Mistrick"
-
-#define IsPlayer(%1) (%1 && %1 <= g_iMaxPlayers)
 
 enum { NONE_MODE = 0 };
 
@@ -60,21 +56,22 @@ new g_iSkillColors[Skills][3] =
 	{255, 238, 0}
 };
 
-new HamHook:g_hHamPreThink, g_iModeSkillMaster, g_iCurMode, g_iTerrorist;
+new g_iModeSkillMaster;
+new g_iCurMode;
+new g_iTerrorist;
+new HookChain:g_hPreThink;
 
 public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 	register_clcmd("drop", "Command_Drop");
 	register_impulse(100, "Impulse_Flashlight");
-	DisableHamForward(g_hHamPreThink = RegisterHam(Ham_Player_PreThink, "player", "Ham_PlayerPreThink_Pre", 0));
-	
-	// g_iMaxPlayers = get_maxplayers();
+	DisableHookChain(g_hPreThink = RegisterHookChain(RG_CBasePlayer_PreThink, "CBasePlayer_PreThink_Pre", 0));
 	
 	g_iModeSkillMaster = dr_register_mode
 	(
 		.Name = "DRM_MODE_SKILLMASTER",
-		.Info = "DRM_MODE_INFO_SKILLMASTER",
+		.Hud = "DRM_MODE_INFO_SKILLMASTER",
 		.Mark = "skillmaster",
 		.RoundDelay = 0,
 		.CT_BlockWeapons = 0,
@@ -88,25 +85,27 @@ public plugin_init()
 }
 public dr_selected_mode(id, mode)
 {
-	g_iCurMode = mode;
-	
-	if(mode == g_iModeSkillMaster)
+	if(g_iCurMode == g_iModeSkillMaster) 
 	{
-		dr_chosen_new_terrorist(id);
-		EnableHamForward(g_hHamPreThink);
-	}
-	else
-	{
-		DisableHamForward(g_hHamPreThink);
+		DisableHookChain(g_hPreThink);
 		for(new Skills:skill; skill < Skills; skill++)
 		{
 			remove_task(_:skill);
 		}
 	}
+
+	g_iCurMode = mode;
+	
+	if(mode == g_iModeSkillMaster)
+	{
+		dr_chosen_new_terrorist(id);
+		EnableHookChain(g_hPreThink);
+	}
 }
 public dr_chosen_new_terrorist(id)
 {
 	g_iTerrorist = id;
+	
 	if(!id || g_iCurMode != g_iModeSkillMaster) return;
 	
 	for(new Skills:i; i < Skills; i++)
@@ -121,19 +120,19 @@ public dr_chosen_new_terrorist(id)
 		remove_task(_:i);
 	}
 }
-public Ham_PlayerPreThink_Pre(id)
+public CBasePlayer_PreThink_Pre(const this)
 {
-	if(id != g_iTerrorist || !is_user_alive(id)) return HAM_IGNORED;
+	if(this != g_iTerrorist || !is_user_alive(this)) return HC_CONTINUE;
 	
-	new buttons = pev(id, pev_button);
-	new oldbuttons = pev(id, pev_oldbuttons);
+	new buttons = get_entvar(this, var_button);
+	new oldbuttons = get_entvar(this, var_oldbuttons);
 	
 	if(buttons & IN_RELOAD && ~oldbuttons & IN_RELOAD)
 	{
 		ActivateSkill(SKILL_PLEASE_STOP);
 	}
 	
-	return HAM_IGNORED;
+	return HC_CONTINUE;
 }
 public Impulse_Flashlight(id)
 {
@@ -179,7 +178,7 @@ ActivateSkill(Skills:skill)
 			for(new i; i < pnum; i++)
 			{
 				id = players[i];
-				set_pev(id, pev_velocity, Float:{ 0.0, 0.0, 0.0 });
+				set_entvar(id, var_velocity, Float:{ 0.0, 0.0, 0.0 });
 			}
 		}
 		case SKILL_BURN_BABY_BURN:
@@ -197,13 +196,13 @@ ActivateSkill(Skills:skill)
 			for(new i, Float:velocity[3]; i < pnum; i++)
 			{
 				id = players[i];
-				pev(id, pev_velocity, velocity);
+				get_entvar(id, var_velocity, velocity);
 				
 				velocity[0] += random_float(-200.0, 200.0);
 				velocity[1] += random_float(-200.0, 200.0);
 				velocity[2] += random_float(0.0, 200.0);
 				
-				set_pev(id, pev_velocity, velocity);
+				set_entvar(id, var_velocity, velocity);
 			}
 		}
 	}
