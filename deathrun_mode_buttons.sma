@@ -1,7 +1,4 @@
 #include <amxmodx>
-#include <cstrike>
-#include <engine>
-#include <fakemeta>
 #include <hamsandwich>
 #include <deathrun_modes>
 
@@ -12,35 +9,33 @@
 #pragma semicolon 1
 
 #define PLUGIN "Deathrun Mode: Buttons"
-#define VERSION "1.0.0"
+#define VERSION "Re 1.0.0"
 #define AUTHOR "Mistrick"
 
-#define IsPlayer(%1) (%1 && %1 <= g_iMaxPlayers)
+#define IsPlayer(%1) (%1 && %1 <= MaxClients)
 
 enum { NONE_MODE = 0 };
 
 new const PREFIX[] = "^4[DRM]";
 
-new g_iModeButtons, g_iCurMode, g_iMaxPlayers;
+new g_iModeButtons, g_iCurMode;
 
 public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 	RegisterHam(Ham_Use, "func_button", "Ham_UseButtons_Pre", 0);
 	
-	g_iMaxPlayers = get_maxplayers();
-	
 	g_iModeButtons = dr_register_mode
 	(
 		.Name = "DRM_MODE_BUTTONS",
-		.Info = "DRM_MODE_INFO_BUTTONS",
+		.Hud = "DRM_MODE_INFO_BUTTONS",
 		.Mark = "buttons",
 		.RoundDelay = 0,
 		.CT_BlockWeapons = 0,
 		.TT_BlockWeapons = 0,
 		.CT_BlockButtons = 0,
 		.TT_BlockButtons = 0,
-		.Bhop = 1,
+		.Bhop = 0,
 		.Usp = 1,
 		.Hide = 0
 	);
@@ -53,9 +48,9 @@ public Ham_UseButtons_Pre(ent, caller, activator, use_type)
 {
 	if(g_iCurMode != NONE_MODE || !IsPlayer(activator)) return HAM_IGNORED;
 	
-	new CsTeams:team = cs_get_user_team(activator);
+	new TeamName:team = get_member(activator, m_iTeam);
 	
-	if(team != CS_TEAM_T) return HAM_IGNORED;
+	if(team != TEAM_TERRORIST) return HAM_IGNORED;
 
 	dr_set_mode(g_iModeButtons, 1, activator);
 	show_menu(activator, 0, "^n");
