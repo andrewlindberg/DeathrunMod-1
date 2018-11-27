@@ -29,15 +29,13 @@ public RoundEnd_Post(WinStatus:status, ScenarioEventEndRound:event, Float:tmDela
 		return HC_CONTINUE;
 	}
 	
-	new timelimit = 0;
+	new iTimeLimit;
 	if(get_member_game(m_iNumCT) > 1)
 	{
-		timelimit = g_nTimeLimit;
+		iTimeLimit = g_nTimeLimit;
 	}
 
-	set_cvar_num("mp_timelimit", timelimit);
-	
-	log_amx(" --------- mp_timelimit %d --------- ", timelimit);
+	set_cvar_num("mp_timelimit", iTimeLimit);
 	
 	return HC_CONTINUE;
 }
