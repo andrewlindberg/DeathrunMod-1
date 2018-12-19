@@ -80,7 +80,7 @@ public Message_CurWeapon(msgid, dest, reciver)
 //************** ReGameDll **************//
 public CBasePlayer_Spawn_Post(const this)
 {
-	if(is_user_alive(this) && get_member(this, m_iTeam) == TEAM_CT)
+	if(is_user_alive(this) && get_member(this, m_iTeam) == TEAM_TERRORIST)
 	{
 		rg_give_item(this, "weapon_m249");
 		g_iOverHeat[this] = 0;
