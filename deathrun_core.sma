@@ -96,6 +96,7 @@ public plugin_init()
 	RegisterHookChain(RG_CBasePlayer_Spawn, "CBasePlayer_Spawn_Post", 1);
 	RegisterHookChain(RG_CBasePlayer_TraceAttack, "CBasePlayer_TraceAttack_Pre", 0);
 	RegisterHookChain(RG_CBasePlayer_TakeDamage, "CBasePlayer_TakeDamage_Pre", 0);
+	RegisterHookChain(RG_CBasePlayer_AddAccount, "CBasePlayer_AddAccount_Pre", 0);
 	RegisterHookChain(RG_CSGameRules_FlPlayerFallDamage, "CSGameRules_FlPlayerFallDamage_Pre", 0);
 	
 	register_forward(FM_ClientKill, "FM_ClientKill_Pre", 0);
@@ -403,6 +404,15 @@ public CBasePlayer_TakeDamage_Pre(const this, pevInflictor, pevAttacker, Float:f
 	}
 	
 	return HC_CONTINUE;
+}
+public CBasePlayer_AddAccount_Pre(const pPlayer, amount, RewardType:type, bool:bTrackChange)
+{
+	if(type == RT_ROUND_BONUS)
+	{
+		amount = (amount / 100) * 25;
+		SetHookChainArg(2, ATYPE_INTEGER, amount);
+		client_print_color(pPlayer, print_team_red, "%s %L", PREFIX, LANG_PLAYER, "DRC_ROUND_BONUS", amount);
+	}
 }
 public CSGameRules_FlPlayerFallDamage_Pre(const index)
 {
