@@ -72,15 +72,9 @@ public dr_selected_mode(id, mode)
 	}
 }
 
-public client_putinserver(id)
-{
-	set_member_game(m_iNumCT, get_member_game(m_iNumCT) + 1);
-}
-
 public client_disconnected(id)
 {
 	remove_task(id + TaskId_Respawn);
-	set_member_game(m_iNumCT, get_member_game(m_iNumCT) - 1);
 }
 
 public RG_RoundEnd_Pre(WinStatus:status, ScenarioEventEndRound:event, Float:tmDelay)
@@ -155,7 +149,7 @@ remove_all_task()
 	{
 		player = iPlayers[i];
 		
-		if(g_iRespawnCount[player] > 0)
+		if(task_exists(player + TaskId_Respawn))
 		{
 			remove_task(player + TaskId_Respawn);
 			rg_send_bartime(player, 0, false);
