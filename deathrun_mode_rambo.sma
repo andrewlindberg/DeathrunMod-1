@@ -55,7 +55,7 @@ public plugin_init()
 		.CT_BlockButtons = 0,
 		.TT_BlockButtons = 1,
 		.Bhop = 1,
-		.Usp = 1,
+		.Usp = 0,
 		.Hide = 0
 	);
 }
