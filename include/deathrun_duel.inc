@@ -12,6 +12,8 @@
 	#pragma library deathrun_duel
 #endif
 
+new const PREFIX[] = "^4[Duel]";
+
 enum CancelType
 {
 	CType_TimeOver,
@@ -19,6 +21,12 @@ enum CancelType
 	CType_PlayerDied,
 	CType_ModeChanged
 }
+
+enum
+{
+	DUELIST_CT = 0,
+	DUELIST_T
+};
 
 /**
  * Get current duel.

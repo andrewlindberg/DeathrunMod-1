@@ -20,7 +20,8 @@ DRD_DUEL_SPAWN_NOCLIP_OFF = Noclip \rOff
 DRD_DUEL_BACK = Back
 DRD_DUEL_NEXT = Next
 DRD_DUEL_EXIT = Exit
-DRD_DUEL_WINNER = Duel winner is^3 %s^1.
+DRD_DUEL_WINNER = Duel winner is ^3%s^1.
+DRD_DUEL_REWARD = ^3%s ^1gets a reward of ^3$%d ^1(^3x%d^1).
 
 [ru]
 DRD_SET_SPAWNS = Вы должны установить две точки спавна.
@@ -44,4 +45,5 @@ DRD_DUEL_SPAWN_NOCLIP_OFF = Noclip \rВыкл
 DRD_DUEL_BACK = Назад
 DRD_DUEL_NEXT = Далее
 DRD_DUEL_EXIT = Выход
-DRD_DUEL_WINNER = Победитель дуэли^3 %s^1.
+DRD_DUEL_WINNER = Победитель дуэли ^3%s^1.
+DRD_DUEL_REWARD = ^3%s ^1получает награду в размере ^3$%d ^1(^3x%d^1).

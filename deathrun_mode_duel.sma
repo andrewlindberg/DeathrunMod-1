@@ -3,6 +3,7 @@
 #include <engine>
 #include <hamsandwich>
 #include <deathrun_modes>
+#include <deathrun_duel>
 #include <xs>
 #include <reapi>
 
@@ -26,16 +27,7 @@
 #define MIN_DISTANCE 200
 #define SPEED_VECTOR 150
 
-new const PREFIX[] = "^4[Duel]";
 new const SPAWNS_DIR[] = "deathrun_duel";
-
-enum CancelType
-{
-	CType_TimeOver,
-	CType_PlayerDisconneced,
-	CType_PlayerDied,
-	CType_ModeChanged
-};
 
 enum (+=100)
 {
@@ -65,12 +57,6 @@ enum _:DUEL_FORWARDS
 	DUEL_START,
 	DUEL_FINISH,
 	DUEL_CANCELED
-};
-
-enum
-{
-	DUELIST_CT = 0,
-	DUELIST_T
 };
 
 new g_iModeDuel;
@@ -159,7 +145,7 @@ public plugin_init()
 	register_touch("trigger_push", "player", "Engine_DuelTouch");
 	register_touch("trigger_teleport", "player", "Engine_DuelTouch");
 	
-	RegisterHookChain(RG_CSGameRules_PlayerKilled, "CSGameRules_PlayerKilled_Post", 1);
+	RegisterHookChain(RG_CSGameRules_PlayerKilled, "CSGameRules_PlayerKilled_Pre", 0);
 	DisableHookChain(g_hTakeDamage = RegisterHookChain(RG_CBasePlayer_TakeDamage, "CBasePlayer_TakeDamage_Pre", 0));
 	DisableHookChain(g_hDropPlayerItem = RegisterHookChain(RG_CBasePlayer_DropPlayerItem, "CBasePlayer_DropPlayerItem_Pre", 0));
 	DisableHookChain(g_hPreThink = RegisterHookChain(RG_CBasePlayer_PreThink, "CBasePlayer_PreThink_Post", 1));
@@ -689,7 +675,7 @@ public Engine_DuelTouch(ent, toucher)
 {
 	return g_iCurMode == g_iModeDuel ? PLUGIN_HANDLED : PLUGIN_CONTINUE;
 }
-public CSGameRules_PlayerKilled_Post(const victim, const killer, const inflictor)
+public CSGameRules_PlayerKilled_Pre(const victim, const killer, const inflictor)
 {
 	if(g_iCurMode == g_iModeDuel && (victim == g_iDuelPlayers[DUELIST_CT] || victim == g_iDuelPlayers[DUELIST_T]))
 	{
