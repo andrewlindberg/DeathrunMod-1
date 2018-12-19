@@ -602,6 +602,10 @@ StartTurnDuel(type)
 		g_iCurTurn = DUELIST_CT;
 		set_task(1.0, "Task_ChangeTurn", TASK_TURNCHANGER, .flags = "b");
 	}
+	else
+	{
+		DisableHookChain(g_hPreThink);
+	}
 }
 public Task_ChangeTurn()
 {
