@@ -5,7 +5,7 @@
 #pragma semicolon 1
 
 #define NUM_RESPAWN 2
-#define COUNTDOWN 3
+#define DELAY_RESPAWN 3
 
 enum 
 {
@@ -127,10 +127,10 @@ public CSGameRules_PlayerKilled_Post(const victim, const killer, const inflictor
 	}
 	
 	rg_send_audio(victim, g_eSoundData[Sound_Heartbeat]);
-	set_task(COUNTDOWN.0, "Task_Respawn", victim + TaskId_Respawn);
-	rg_send_bartime(victim, COUNTDOWN, false);
+	set_task(DELAY_RESPAWN.0, "Task_Respawn", victim + TaskId_Respawn);
+	rg_send_bartime(victim, DELAY_RESPAWN, false);
 	
-	client_print(victim, print_center, "Вы возродитесь через %d секунд.", COUNTDOWN);
+	client_print(victim, print_center, "Вы возродитесь через %d секунд.", DELAY_RESPAWN);
 	return HC_CONTINUE;
 }
 
@@ -138,11 +138,14 @@ public Task_Respawn(id)
 {
 	id -= TaskId_Respawn;
 	
-	g_iRespawnCount[id]--;
-	
-	ActivateIcon(id, SIcon_Hide);
-	rg_send_audio(id, g_eSoundData[Sound_Respawn]);
-	rg_round_respawn(id);
+	if(get_member(id, m_iTeam) == TEAM_CT)
+	{
+		g_iRespawnCount[id]--;
+		
+		ActivateIcon(id, SIcon_Hide);
+		rg_send_audio(id, g_eSoundData[Sound_Respawn]);
+		rg_round_respawn(id);
+	}
 }
 
 remove_all_task()
