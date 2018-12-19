@@ -272,10 +272,7 @@ ReplaceTer(NewTer)
 		rg_set_user_team(NewTer, TEAM_TERRORIST);
 	}
 	
-	if(!is_user_alive(NewTer))
-	{
-		rg_round_respawn(NewTer);
-	}
+	rg_round_respawn(NewTer);
 	
 	new Float:origin[3]; 
 	get_entvar(g_iCurrTer, var_origin, origin);
