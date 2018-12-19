@@ -412,9 +412,7 @@ public CBasePlayer_AddAccount_Pre(const pPlayer, amount, RewardType:type, bool:b
 		amount = (amount / 100) * 25;
 		client_print_color(pPlayer, print_team_red, "%s %L", PREFIX, LANG_PLAYER, "DRC_ROUND_BONUS", amount);
 		SetHookChainArg(2, ATYPE_INTEGER, amount);
-		return HC_SUPERCEDE;
 	}
-	return HC_CONTINUE;
 }
 public CSGameRules_FlPlayerFallDamage_Pre(const index)
 {
