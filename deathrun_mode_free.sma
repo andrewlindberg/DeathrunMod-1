@@ -36,7 +36,7 @@ public plugin_init()
 //***** ReGameDll *****//
 public CBasePlayer_AddPlayerItem_Pre(const this, const pItem)
 {
-	if(get_member(pItem, m_iId) == CSW_KNIFE) return HC_CONTINUE;
+	if(rg_get_weaponbox_id(pItem) == WEAPON_KNIFE) return HC_CONTINUE;
 	
 	client_print(this, print_center, "В данном режиме оружия запрещены");
 	SetHookChainReturn(ATYPE_INTEGER, false);
