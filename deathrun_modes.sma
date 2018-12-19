@@ -2,9 +2,10 @@
 #include <cstrike>
 #include <fakemeta_util>
 #include <hamsandwich>
-#include <deathrun_modes>
 #include <fun>
 #include <reapi>
+#include <gamecms5>
+#include <deathrun_modes>
 
 #if AMXX_VERSION_NUM < 183
 	#include <colorchat>
@@ -263,6 +264,10 @@ public client_putinserver(id)
 {
 	g_bBhop[id] = true;
 }
+public OnAPIMemberConnected(id, memberId, memberName[])
+{
+	g_bBhop[id] = bool:cmsapi_get_user_setting(id, "amx_game_bhop");
+}
 public client_disconnected(id)
 {
 	remove_task(id + TASK_SHOWMENU);
@@ -274,7 +279,9 @@ public Command_Bhop(id)
 		return PLUGIN_CONTINUE;
 	}
 	
-	g_bBhop[id] = !g_bBhop[id];
+	new szBhop[4]; g_bBhop[id] = !g_bBhop[id];
+	num_to_str(_:g_bBhop[id], szBhop, charsmax(szBhop));
+	cmsapi_set_user_setting(id, "amx_game_bhop", g_bBhop);
 	client_print_color(id, print_team_default, "%s^1 %L", PREFIX, id, "DRM_BHOP_MSG", id, g_bBhop[id] ? "DRM_ENABLED" : "DRM_DISABLED");
 	
 	return PLUGIN_CONTINUE;
