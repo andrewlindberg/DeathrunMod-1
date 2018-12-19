@@ -30,6 +30,8 @@ public CBasePlayer_AddAccount_Pre(const pPlayer, amount, RewardType:type, bool:b
 	}
 	
 	DisableHookChain(g_hAddAccount);
+	
+	amount = get_member_game(m_iNumCT) * 10;
 	if(++g_iMultipliedReward[pPlayer] > 1)
 	{
 		amount *= g_iMultipliedReward[pPlayer];
