@@ -404,7 +404,7 @@ public CBasePlayer_TakeDamage_Pre(const this, pevInflictor, pevAttacker, Float:f
 }
 public CBasePlayer_AddAccount_Pre(const pPlayer, amount, RewardType:type, bool:bTrackChange)
 {
-	if(type == RT_ROUND_BONUS)
+	if(type == RT_ROUND_BONUS && amount > 0)
 	{
 		amount = (amount / 100) * 25;
 		client_print_color(pPlayer, print_team_red, "%s %L", PREFIX, LANG_PLAYER, "DRC_ROUND_BONUS", amount);
