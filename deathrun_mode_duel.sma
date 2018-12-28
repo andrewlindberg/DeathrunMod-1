@@ -411,7 +411,7 @@ SaveSpawns(id)
 {
 	if(!g_bSetSpawn[DUELIST_CT] || !g_bSetSpawn[DUELIST_T])
 	{
-		client_print_color(id, print_team_default, "%s^1 %L", PREFIX, id, "DRD_SET_SPAWNS");
+		client_print_color(id, print_team_default, "%s^1 %L", DRD_PREFIX, id, "DRD_SET_SPAWNS");
 		return;
 	}
 	if(file_exists(g_szSpawnsFile))
@@ -427,7 +427,7 @@ SaveSpawns(id)
 		g_bLoadedSpawns = true;
 		GetSpawnAngles();
 		GetMinDistance();
-		client_print_color(id, print_team_default, "%s^1 %L", PREFIX, id, "DRD_SPAWNS_SAVED");
+		client_print_color(id, print_team_default, "%s^1 %L", DRD_PREFIX, id, "DRD_SPAWNS_SAVED");
 	}
 }
 public Command_Duel(id)
@@ -505,7 +505,7 @@ DuelPreStart()
 	
 	ExecuteForward(g_iForwards[DUEL_PRESTART], g_iReturn, g_iDuelPlayers[DUELIST_T], g_iDuelPlayers[DUELIST_CT], g_iDuelTimer);
 	
-	client_print_color(0, print_team_default, "%s^1 %L", PREFIX, LANG_PLAYER, "DRD_DUEL_START_TIME", PRESTART_TIME);
+	client_print_color(0, print_team_default, "%s^1 %L", DRD_PREFIX, LANG_PLAYER, "DRD_DUEL_START_TIME", PRESTART_TIME);
 }
 public Task_PreStartTimer()
 {
@@ -545,7 +545,7 @@ public Task_DuelTimer()
 		ExecuteForward(g_iForwards[DUEL_CANCELED], g_iReturn, CType_TimeOver);
 		ResetDuel();
 		
-		client_print_color(0, print_team_default, "%s^1 %L", PREFIX, LANG_PLAYER, "DRD_TIME_OVER");
+		client_print_color(0, print_team_default, "%s^1 %L", DRD_PREFIX, LANG_PLAYER, "DRD_TIME_OVER");
 	}
 	else
 	{
@@ -572,7 +572,7 @@ PrepareForDuel(player)
 	rg_set_user_armor(g_iDuelPlayers[player], 0, ARMOR_NONE);
 	set_entvar(g_iDuelPlayers[player], var_health, 100.0);
 	set_entvar(g_iDuelPlayers[player], var_gravity, 1.0);
-	rh_set_user_rendering(g_iDuelPlayers[player], kRenderFxGlowShell, g_fColors[player], kRenderNormal, 20.0);
+	rg_set_entity_rendering(g_iDuelPlayers[player], kRenderFxGlowShell, g_fColors[player], kRenderNormal, 20.0);
 }
 MovePlayerToSpawn(player)
 {
@@ -737,7 +737,7 @@ FinishDuel(winner, looser)
 	ExecuteForward(g_iForwards[DUEL_FINISH], g_iReturn, winner, looser);
 	
 	new szWinner[32]; get_entvar(winner, var_netname, szWinner, charsmax(szWinner));
-	client_print_color(0, winner, "%s^1 %L", PREFIX, LANG_PLAYER, "DRD_DUEL_WINNER", szWinner);
+	client_print_color(0, winner, "%s^1 %L", DRD_PREFIX, LANG_PLAYER, "DRD_DUEL_WINNER", szWinner);
 }
 public CBasePlayer_TakeDamage_Pre(const this, pevInflictor, pevAttacker, Float:flDamage, bitsDamageType)
 {

@@ -93,5 +93,5 @@ public dr_selected_mode(id, mode)
 }
 set_invisibility(id)
 {
-	rh_set_user_rendering(id, kRenderFxGlowShell, Float:{0.0, 0.0, 0.0}, kRenderTransAlpha, 0.0);
+	rg_set_entity_rendering(id, kRenderFxGlowShell, Float:{0.0, 0.0, 0.0}, kRenderTransAlpha, 0.0);
 }

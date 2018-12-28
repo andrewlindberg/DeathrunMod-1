@@ -3,7 +3,7 @@
 
 #define PLUGIN "MapManager: Online Helper"
 #define VERSION "1.0"
-#define AUTHOR "vk.com/cs.royal"
+#define AUTHOR "CS Royal Project"
 
 new g_nTimeLimit;
 

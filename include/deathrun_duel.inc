@@ -12,7 +12,7 @@
 	#pragma library deathrun_duel
 #endif
 
-new const PREFIX[] = "^4[Duel]";
+stock const DRD_PREFIX[] = "^4[Duel]";
 
 enum CancelType
 {

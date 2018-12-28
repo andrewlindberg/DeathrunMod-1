@@ -38,7 +38,7 @@ public CBasePlayer_AddAccount_Pre(const pPlayer, amount, RewardType:type, bool:b
 	}
 	
 	new szWinner[32]; get_entvar(pPlayer, var_netname, szWinner, charsmax(szWinner));
-	client_print_color(0, pPlayer, "%s^1 %L", PREFIX, LANG_PLAYER, "DRD_DUEL_REWARD", szWinner, amount, g_iMultipliedReward[pPlayer]);
+	client_print_color(0, pPlayer, "%s^1 %L", DRD_PREFIX, LANG_PLAYER, "DRD_DUEL_REWARD", szWinner, amount, g_iMultipliedReward[pPlayer]);
 	
 	SetHookChainArg(2, ATYPE_INTEGER, amount);
 	return HC_CONTINUE;

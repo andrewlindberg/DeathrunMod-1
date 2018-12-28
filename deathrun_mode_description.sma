@@ -8,21 +8,21 @@
 #pragma semicolon 1
 
 new g_szCurMode[32];
-new szGameName[32];
+new g_szGameName[32];
 
 public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 	
-	szGameName = "vk.com/cs.royal";
-	set_member_game(m_GameDesc, szGameName);
+	g_szGameName = "vk.com/cs.royal";
+	set_member_game(m_GameDesc, g_szGameName);
 }
 
 public dr_selected_mode(id, mode)
 {
 	dr_get_mode(g_szCurMode, charsmax(g_szCurMode));
-	formatex(szGameName, charsmax(szGameName), "%L", LANG_SERVER, g_szCurMode);
+	formatex(g_szGameName, charsmax(g_szGameName), "%L", LANG_SERVER, g_szCurMode);
 	
-	if(!mode) add(szGameName, charsmax(szGameName), "а");
-	set_member_game(m_GameDesc, szGameName);
+	if(!mode) add(g_szGameName, charsmax(g_szGameName), "а");
+	set_member_game(m_GameDesc, g_szGameName);
 }

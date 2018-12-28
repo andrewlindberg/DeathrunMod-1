@@ -124,7 +124,7 @@ native bool:dr_get_user_bhop(id);
  */
 forward dr_selected_mode(id, mode);
 
-stock rh_set_user_rendering(entity, fx = kRenderFxNone, Float:rgb[3] = {255.0,255.0,255.0}, render = kRenderNormal, Float:amount = 16.0)
+stock rg_set_entity_rendering(entity, fx = kRenderFxNone, Float:rgb[3] = {255.0,255.0,255.0}, render = kRenderNormal, Float:amount = 16.0)
 {
 	set_entvar(entity, var_renderfx, fx);
 	set_entvar(entity, var_rendercolor, rgb);
