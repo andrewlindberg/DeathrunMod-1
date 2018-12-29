@@ -6,6 +6,7 @@
 #define AUTHOR "CS Royal Project"
 
 new g_nTimeLimit;
+new g_iTimeLimit;
 
 public plugin_init()
 {
@@ -18,24 +19,24 @@ public plugin_init()
 		return;
 	}
 	
-	g_nTimeLimit = get_cvar_num("mp_timelimit");
-	
 	RegisterHookChain(RG_RoundEnd, "RoundEnd_Post", 1);
-}
-public RoundEnd_Post(WinStatus:status, ScenarioEventEndRound:event, Float:tmDelay)
-{
-	if(ROUND_GAME_RESTART > event < ROUND_GAME_COMMENCE && event != ROUND_END_DRAW) 
-	{
-		return HC_CONTINUE;
-	}
 	
-	new iTimeLimit;
-	if(get_member_game(m_iNumCT) > 1)
+	g_nTimeLimit = get_cvar_num("mp_timelimit");
+	g_iTimeLimit = g_nTimeLimit;
+}
+public RoundEnd_Post()
+{
+	new iNumCT = get_member_game(m_iNumCT);
+	
+	if(g_iTimeLimit > 0 && iNumCT > 0) return HC_CONTINUE;
+	
+	if(!g_iTimeLimit)
 	{
-		iTimeLimit = g_nTimeLimit;
+		g_iTimeLimit = g_nTimeLimit;
 	}
-
-	set_cvar_num("mp_timelimit", iTimeLimit);
+	else g_iTimeLimit = 0;
+	
+	set_cvar_num("mp_timelimit", g_iTimeLimit);
 	
 	return HC_CONTINUE;
 }
