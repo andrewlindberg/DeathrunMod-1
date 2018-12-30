@@ -11,7 +11,7 @@ new g_iTimeLimit;
 public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR)
-	RegisterHookChain(RG_RoundEnd, "RoundEnd_Post", 1);
+	RegisterHookChain(RG_CSGameRules_RestartRound, "CSGameRules_RestartRound_Post", 1);
 	
 	g_nTimeLimit = get_cvar_num("mp_timelimit");
 	g_iTimeLimit = g_nTimeLimit;
@@ -25,17 +25,21 @@ public OnConfigsExecuted()
 		log_amx("Map %s not found.", default_map);
 	}
 }
-public RoundEnd_Post()
+public CSGameRules_RestartRound_Post()
 {
 	new iNumCT = get_member_game(m_iNumCT);
 	
 	if(g_iTimeLimit > 0 && iNumCT > 0) return HC_CONTINUE;
 	
 	if(!g_iTimeLimit)
-	{
 		g_iTimeLimit = g_nTimeLimit;
+	else 
+	{
+		if(!g_nTimeLimit)
+			g_nTimeLimit = get_timeleft();
+		
+		g_iTimeLimit = 0;
 	}
-	else g_iTimeLimit = 0;
 	
 	set_cvar_num("mp_timelimit", g_iTimeLimit);
 	
