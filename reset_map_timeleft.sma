@@ -11,18 +11,19 @@ new g_iTimeLimit;
 public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR)
-	
-	new default_map[32]; get_cvar_string("mapm_default_map", default_map, charsmax(default_map));
-	if(!is_map_valid(default_map)) 
-	{
-		pause("ad"), log_amx("Map %s not found.", default_map);
-		return;
-	}
-	
 	RegisterHookChain(RG_RoundEnd, "RoundEnd_Post", 1);
 	
 	g_nTimeLimit = get_cvar_num("mp_timelimit");
 	g_iTimeLimit = g_nTimeLimit;
+}
+public OnConfigsExecuted()
+{
+	new default_map[32]; get_cvar_string("mapm_default_map", default_map, charsmax(default_map));
+	if(!is_map_valid(default_map)) 
+	{
+		pause("ad");
+		log_amx("Map %s not found.", default_map);
+	}
 }
 public RoundEnd_Post()
 {
