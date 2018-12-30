@@ -266,7 +266,8 @@ public client_putinserver(id)
 }
 public OnAPIMemberConnected(id, memberId, memberName[])
 {
-	g_bBhop[id] = bool:cmsapi_get_user_setting(id, "amx_game_bhop");
+	new user_setting = cmsapi_get_user_setting(id, "amx_game_bhop");
+	if(user_setting > INVALID_HANDLE) g_bBhop[id] = bool:user_setting;
 }
 public client_disconnected(id)
 {
@@ -281,7 +282,7 @@ public Command_Bhop(id)
 	
 	new szBhop[4]; g_bBhop[id] = !g_bBhop[id];
 	num_to_str(_:g_bBhop[id], szBhop, charsmax(szBhop));
-	cmsapi_set_user_setting(id, "amx_game_bhop", g_bBhop);
+	cmsapi_set_user_setting(id, "amx_game_bhop", szBhop);
 	client_print_color(id, print_team_default, "%s^1 %L", PREFIX, id, "DRM_BHOP_MSG", id, g_bBhop[id] ? "DRM_ENABLED" : "DRM_DISABLED");
 	
 	return PLUGIN_CONTINUE;
@@ -399,7 +400,7 @@ public CBasePlayer_Spawn_Post(const this)
 		return HC_CONTINUE;
 	}
 	
-	rh_set_user_rendering(this);
+	rg_set_entity_rendering(this);
 	
 	new TeamName:team = get_member(this, m_iTeam);
 	rg_remove_items_by_slot(this, PISTOL_SLOT);
