@@ -262,12 +262,9 @@ public bool:native_get_user_bhop(id)
 }
 public client_putinserver(id)
 {
-	g_bBhop[id] = true;
-}
-public OnAPIMemberConnected(id, memberId, memberName[])
-{
 	new user_setting = cmsapi_get_user_setting(id, "amx_game_bhop");
-	if(user_setting > INVALID_HANDLE) g_bBhop[id] = bool:user_setting;
+	if(user_setting < 0) user_setting = 1;
+	g_bBhop[id] = bool:user_setting;
 }
 public client_disconnected(id)
 {

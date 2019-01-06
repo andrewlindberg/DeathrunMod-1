@@ -4,8 +4,8 @@
 
 #pragma semicolon 1
 
-#define NUM_RESPAWN 2
-#define DELAY_RESPAWN 3
+#define RESPAWN_NUM 2
+#define RESPAWN_DELAY 3
 
 enum 
 {
@@ -31,7 +31,7 @@ enum _:Hooks
 	HookChain:Hook_PlayerKilled
 };
 
-new g_eSoundData[Sounds][64] =
+new g_eSoundData[Sounds][MAX_RESOURCE_PATH_LENGTH] =
 {
 	"royal/autorespawn/spawn.wav", 
 	"royal/autorespawn/heartbeat.wav", 
@@ -51,10 +51,10 @@ public plugin_precache()
 
 public plugin_init()
 {
-	register_plugin("Deathrun: Auto Respawn", "Re 0.6", "PRoSToG4mer");
+	register_plugin("Deathrun: Auto Respawn", "Re 0.7", "PRoSToG4mer");
 	
 	RegisterHookChain(RG_RoundEnd, "RG_RoundEnd_Pre", 0);
-	RegisterHookChain(RG_CSGameRules_RestartRound, "CSGameRules_RestartRound_Pre", 0);
+	RegisterHookChain(RG_CSGameRules_RestartRound, "CSGameRules_RestartRound_Post", 1);
 	DisableHookChain(g_hCSGameRules[Hook_PlayerSpawn] = RegisterHookChain(RG_CSGameRules_PlayerSpawn, "CSGameRules_PlayerSpawn_Post", 1));
 	DisableHookChain(g_hCSGameRules[Hook_PlayerKilled] = RegisterHookChain(RG_CSGameRules_PlayerKilled, "CSGameRules_PlayerKilled_Post", 1));
 }
@@ -82,22 +82,27 @@ public RG_RoundEnd_Pre(WinStatus:status, ScenarioEventEndRound:event, Float:tmDe
 	remove_all_task();
 }
 
-public CSGameRules_RestartRound_Pre()
+public CSGameRules_RestartRound_Post()
 {
-	if(get_member_game(m_bCompleteReset))
+	new players[32], pnum; get_players(players, pnum, "ceh", "CT");
+	for(new i = 0, player; i < pnum; i++)
+	{
+		player = players[i];
+		if(is_user_connected(player))
+		{
+			g_iRespawnCount[player] = RESPAWN_NUM;
+		}
+	}
+	
+	if(pnum > 2)
 	{
 		EnableHookChain(g_hCSGameRules[Hook_PlayerSpawn]);
 		EnableHookChain(g_hCSGameRules[Hook_PlayerKilled]);
 	}
-	
-	new iPlayers[32], pnumct; get_players(iPlayers, pnumct, "eh", "CT");
-	for(new i = 0, player; i < pnumct; i++)
+	else
 	{
-		player = iPlayers[i];
-		if(is_user_connected(player))
-		{
-			g_iRespawnCount[player] = NUM_RESPAWN;
-		}
+		DisableHookChain(g_hCSGameRules[Hook_PlayerSpawn]);
+		DisableHookChain(g_hCSGameRules[Hook_PlayerKilled]);
 	}
 }
 
@@ -109,7 +114,7 @@ public CSGameRules_PlayerSpawn_Post(const index)
 
 public CSGameRules_PlayerKilled_Post(const victim, const killer, const inflictor)
 {
-	if(get_member_game(m_iNumCT) < 2 || get_member(victim, m_iTeam) != TEAM_CT) return HC_CONTINUE;
+	if(get_member(victim, m_iTeam) != TEAM_CT) return HC_CONTINUE;
 	
 	ActivateIcon(victim, SIcon_Show);
 	
@@ -121,10 +126,10 @@ public CSGameRules_PlayerKilled_Post(const victim, const killer, const inflictor
 	}
 	
 	rg_send_audio(victim, g_eSoundData[Sound_Heartbeat]);
-	set_task(DELAY_RESPAWN.0, "Task_Respawn", victim + TaskId_Respawn);
-	rg_send_bartime(victim, DELAY_RESPAWN, false);
+	set_task(RESPAWN_DELAY.0, "Task_Respawn", victim + TaskId_Respawn);
+	rg_send_bartime(victim, RESPAWN_DELAY, false);
 	
-	client_print(victim, print_center, "Вы возродитесь через %d секунд.", DELAY_RESPAWN);
+	client_print(victim, print_center, "Вы возродитесь через %d секунд.", RESPAWN_DELAY);
 	return HC_CONTINUE;
 }
 

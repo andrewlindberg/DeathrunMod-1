@@ -53,10 +53,12 @@ enum Forwards
 
 new const PREFIX[] = "^3[^4Royal Project^3]";
 
-new g_eCvars[Cvars], g_iForwards[Forwards], g_iReturn, g_bWarmUp = true;
+new g_eCvars[Cvars];
+new g_iForwards[Forwards], g_iReturn;
 new g_iForwardSpawn, Trie:g_tRemoveEntities;
 new g_msgSendAudio, g_msgAmmoPickup, g_msgWeapPickup;
 new g_iOldAmmoPickupBlock, g_iOldWeapPickupBlock, g_iCurrTer, g_iNextTer;
+new g_bWarmUp = true, Float:g_fRespawnDelay = 3.0;
 
 public plugin_init()
 {
@@ -180,7 +182,7 @@ public plugin_cfg()
 	set_pcvar_num(g_eCvars[AUTO_JOIN_TEAM], 1);
 	set_pcvar_string(g_eCvars[HUMANS_JOIN_TEAM], "CT");
 	set_pcvar_num(g_eCvars[TEAMKILLS], 0);
-	set_pcvar_num(g_eCvars[FORCERESPAWN], 1);
+	set_pcvar_float(g_eCvars[FORCERESPAWN], g_fRespawnDelay);
 	set_pcvar_num(g_eCvars[RADIOICON], 0);
 	set_pcvar_num(g_eCvars[ALLTALK], 1);
 	set_pcvar_num(g_eCvars[RESPAWN_IMMUNITYTIME], 5);
@@ -491,12 +493,12 @@ stock rg_get_players(players[32], bool:alive = false, skip_ter = false)
 	new TeamName:team, count;
 	for(new i = 1; i <= MaxClients; i++)
 	{
-		if(!is_user_connected(i) 
+		if(!is_user_connected(i) || is_user_bot(i)
 		|| skip_ter && i == g_iCurrTer 
 		|| alive && !is_user_alive(i)) continue;
 		
 		team = get_member(i, m_iTeam);
-		if(TEAM_TERRORIST < team > TEAM_CT) continue;
+		if(team < TEAM_TERRORIST || team > TEAM_CT) continue;
 		players[count++] = i;
 	}
 	return count;
