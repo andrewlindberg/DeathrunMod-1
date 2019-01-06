@@ -28,6 +28,8 @@ DRM_MODE_INFO_SKILLMASTER = R - Stop, F - Arson, G - Kick.
 DRM_MODE_INFO_VICTIM = TT беспомощен, но почти бессмертен!
 DRM_MODE_INFO_MONEY = CT теряют, TT получают!
 
+DRM_MODE_CHAT_MONEY = ^4%s ^1проиграл террористу ^3$%d ^1(^4x%d^1).
+
 [ru]
 DRM_BHOP_MSG = Bhop^3 %L^1.
 DRM_ENABLED = включен
@@ -57,3 +59,5 @@ DRM_MODE_INFO_RAMBO = Да начнется Месиво!
 DRM_MODE_INFO_SKILLMASTER = R - Стоп, F - Поджог, G - пинок.
 DRM_MODE_INFO_VICTIM = TT беспомощен, но почти бессмертен!
 DRM_MODE_INFO_MONEY = CT теряют, TT получают!
+
+DRM_MODE_CHAT_MONEY = ^4%s ^1проиграл террористу ^3$%d ^1(^4x%d^1).

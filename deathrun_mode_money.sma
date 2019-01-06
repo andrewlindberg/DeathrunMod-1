@@ -11,11 +11,19 @@
 
 new g_iModeMoney;
 new g_iCurMode;
+new g_iTerrorist;
+new g_iVictim;
+new g_iDeathCount;
+
+new HookChain:g_hPlayerKilled;
+new HookChain:g_hAddAccount;
 
 public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
-	RegisterHookChain(RG_CBasePlayer_Killed, "CBasePlayer_Killed_Post", 1);
+	
+	DisableHookChain(g_hPlayerKilled = RegisterHookChain(RG_CBasePlayer_Killed, "CBasePlayer_Killed_Pre", 0));
+	DisableHookChain(g_hAddAccount = RegisterHookChain(RG_CBasePlayer_AddAccount, "CBasePlayer_AddAccount_Pre", 0));
 	
 	g_iModeMoney = dr_register_mode
 	(
@@ -33,40 +41,48 @@ public plugin_init()
 	);
 }
 //************** ReGameDll **************//
-public CBasePlayer_Killed_Post(const this, pevAttacker, iGib)
+public CBasePlayer_Killed_Pre(const this, pevAttacker, iGib)
 {
-	if(g_iCurMode == g_iModeMoney)
+	g_iVictim = this;
+	g_iDeathCount++;
+	
+	if(this != pevAttacker)
 	{
-		new players[32], pnum; get_players(players, pnum, "ae", "TERRORIST");
-		if(pnum > 1)
-		{
-			for(new i = 0, player; i < pnum; i++)
-			{
-				player = players[i];
-				rg_add_account(player, REWARD_AMOUNT, AS_ADD);
-			}
-		}
-		else
-		{
-			rg_add_account(players[0], REWARD_AMOUNT, AS_ADD);
-		}
-		if(get_member(this, m_iTeam) == TEAM_CT)
-		{
-			new reward = get_member(this, m_iAccount);
-			
-			if(reward >= REWARD_AMOUNT)
-			{
-				reward = REWARD_AMOUNT;
-			}
-			
-			rg_add_account(this, -reward, AS_ADD);
-			new lossername[32]; get_entvar(this, var_netname, lossername, charsmax(lossername));
-			client_print_color(0, this, "^1[^3Денежный^1] ^4%s ^1отдал террористу ^3$%d ^1за свою смерть.", lossername, reward);
-		}
+		SetHookChainArg(2, ATYPE_INTEGER, g_iTerrorist);
 	}
+	
+	EnableHookChain(g_hAddAccount);
+}
+public CBasePlayer_AddAccount_Pre(const this, amount, RewardType:type, bool:bTrackChange)
+{
+	DisableHookChain(g_hAddAccount);
+	
+	if(type == RT_ENEMY_KILLED)
+	{
+		new multiplied_reward = amount * g_iDeathCount;
+		new lossername[32]; get_entvar(g_iVictim, var_netname, lossername, charsmax(lossername));
+		client_print_color(0, g_iVictim, "^1[^3%l^1] %l", "DRM_MODE_MONEY", "DRM_MODE_CHAT_MONEY", lossername, multiplied_reward, g_iDeathCount);
+		
+		rg_add_account(g_iVictim, -clamp(multiplied_reward, 0, get_member(g_iVictim, m_iAccount)), AS_ADD);
+		SetHookChainArg(2, ATYPE_INTEGER, multiplied_reward);
+	}
+	return HC_CONTINUE;
 }
 //************** Deathrun Mode **************//
 public dr_selected_mode(id, mode)
 {
+	if(g_iCurMode == g_iModeMoney)
+	{
+		g_iTerrorist = 0;
+		DisableHookChain(g_hPlayerKilled);
+	}
+	
 	g_iCurMode = mode;
+	
+	if(mode == g_iModeMoney)
+	{
+		g_iTerrorist = id;
+		g_iDeathCount = 0;
+		EnableHookChain(g_hPlayerKilled);
+	}
 }
