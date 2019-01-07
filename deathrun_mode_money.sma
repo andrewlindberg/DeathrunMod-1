@@ -60,8 +60,8 @@ public CBasePlayer_AddAccount_Pre(const this, amount, RewardType:type, bool:bTra
 	if(type == RT_ENEMY_KILLED)
 	{
 		new multiplied_reward = amount * g_iDeathCount;
-		new lossername[32]; get_entvar(g_iVictim, var_netname, lossername, charsmax(lossername));
-		client_print_color(0, g_iVictim, "^1[^3%l^1] %l", "DRM_MODE_MONEY", "DRM_MODE_CHAT_MONEY", lossername, multiplied_reward, g_iDeathCount);
+		new losser[32]; get_entvar(g_iVictim, var_netname, losser, charsmax(losser));
+		client_print_color(0, g_iVictim, "^1[^3%l^1] %l", "DRM_MODE_MONEY", "DRM_MODE_CHAT_MONEY", losser, multiplied_reward, g_iDeathCount);
 		
 		rg_add_account(g_iVictim, -clamp(multiplied_reward, 0, get_member(g_iVictim, m_iAccount)), AS_ADD);
 		SetHookChainArg(2, ATYPE_INTEGER, multiplied_reward);
