@@ -1,7 +1,7 @@
 #include <amxmodx>
 #include <reapi>
 
-#define PLUGIN "MapManager: Online Helper"
+#define PLUGIN "MapManager: Reset Timeleft"
 #define VERSION "1.0"
 #define AUTHOR "CS Royal Project"
 
@@ -35,8 +35,8 @@ public CSGameRules_RestartRound_Post()
 		g_iTimeLimit = g_nTimeLimit;
 	else 
 	{
-		if(!g_nTimeLimit)
-			g_nTimeLimit = get_timeleft();
+		// if(!g_nTimeLimit)
+		// 	g_nTimeLimit = get_timeleft();
 		
 		g_iTimeLimit = 0;
 	}
