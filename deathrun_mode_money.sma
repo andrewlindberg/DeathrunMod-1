@@ -7,6 +7,7 @@
 #define VERSION "Re 0.0.1"
 #define AUTHOR "CS Royal Project"
 
+#define IsPlayer(%1) (%1 && %1 <= MaxClients)
 #define REWARD_AMOUNT 2500
 
 new g_iModeMoney;
@@ -43,15 +44,18 @@ public plugin_init()
 //************** ReGameDll **************//
 public CBasePlayer_Killed_Pre(const this, pevAttacker, iGib)
 {
+	if(this == g_iTerrorist) return HC_CONTINUE;
+	
 	g_iVictim = this;
 	g_iDeathCount++;
 	
-	if(this != pevAttacker)
+	if(!IsPlayer(pevAttacker))
 	{
 		SetHookChainArg(2, ATYPE_INTEGER, g_iTerrorist);
 	}
-	
 	EnableHookChain(g_hAddAccount);
+	
+	return HC_CONTINUE;
 }
 public CBasePlayer_AddAccount_Pre(const this, amount, RewardType:type, bool:bTrackChange)
 {
