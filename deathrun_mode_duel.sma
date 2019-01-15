@@ -18,6 +18,7 @@
 
 #pragma semicolon 1
 
+#define IsPlayer(%1) (%1 && %1 <= MaxClients)
 #define SHOW_MENU_FOR_LAST_CT
 
 #define PRESTART_TIME 10
@@ -38,25 +39,25 @@ enum (+=100)
 	TASK_FAST
 };
 
-enum _:DUEL_SOUNDS
+enum _:SoundType
 {
-	SOUND_FIGHT,
-	SOUND_ATTACK,
-	SOUND_MISSED,
-	SOUND_COWARD,
-	SOUND_FAST,
-	SOUND_HIT1,
-	SOUND_HIT2,
-	SOUND_HIT3,
-	SOUND_HIT4
+	SType_Fight,
+	SType_Attack,
+	SType_Missed,
+	SType_Coward,
+	SType_Fast,
+	SType_Hit1,
+	SType_Hit2,
+	SType_Hit3,
+	SType_Hit4
 };
 
-enum _:DUEL_FORWARDS
+enum _:ForwardType
 {
-	DUEL_PRESTART,
-	DUEL_START,
-	DUEL_FINISH,
-	DUEL_CANCELED
+	FType_PreStart,
+	FType_Start,
+	FType_Finish,
+	FType_Canceled
 };
 
 new g_iModeDuel;
@@ -67,7 +68,6 @@ new g_iDuelWeapon[2];
 new g_iDuelTurnTimer;
 new g_iDuelTimer;
 new g_iCurTurn;
-new g_iDuelMenu;
 
 new Float:g_fDuelSpawnOrigins[2][3];
 new Float:g_fDuelSpawnAngles[2][3];
@@ -83,14 +83,14 @@ new Float:g_fColors[2][3] =
 	{ 250.0, 0.0, 0.0 }
 };
 
-new g_iForwards[DUEL_FORWARDS];
+new g_iForwards[ForwardType];
 new g_iReturn;
 new g_bSavedConveyorInfo;
 new HookChain:g_hTakeDamage;
 new HookChain:g_hPreThink;
 new HookChain:g_hDropPlayerItem;
 
-new g_eDuelWeaponName[][] =
+new g_szWeaponName[][] =
 {
 	"weapon_knife",
 	"weapon_deagle",
@@ -103,7 +103,7 @@ new g_eDuelWeaponName[][] =
 	"weapon_m4a1"
 };
 
-new g_eDuelSounds[DUEL_SOUNDS][] =
+new g_szSounds[SoundType][] =
 {
 	"sound/royal/mode/duel/duel_fight.wav",
 	"sound/royal/mode/duel/duel_attack.wav",
@@ -118,9 +118,9 @@ new g_eDuelSounds[DUEL_SOUNDS][] =
 
 public plugin_precache()
 {
-	for(new i = 0; i < sizeof(g_eDuelSounds); i++)
+	for(new i = 0; i < sizeof(g_szSounds); i++)
 	{
-		precache_sound(g_eDuelSounds[i][6]);
+		precache_sound(g_szSounds[i][6]);
 	}
 }
 
@@ -131,9 +131,9 @@ public plugin_init()
 	register_clcmd("say /duel", "Command_Duel");
 	register_clcmd("duel_spawns", "Command_DuelSpawn", ADMIN_CFG);
 	
-	for(new i = 1; i < sizeof(g_eDuelWeaponName); i++)
+	for(new i = 1; i < sizeof(g_szWeaponName); i++)
 	{
-		RegisterHam(Ham_Weapon_PrimaryAttack, g_eDuelWeaponName[i], "Ham_WeaponPrimaryAttack_Post", 1);
+		RegisterHam(Ham_Weapon_PrimaryAttack, g_szWeaponName[i], "Ham_WeaponPrimaryAttack_Post", 1);
 	}
 	
 	RegisterHam(Ham_Weapon_SecondaryAttack, "weapon_usp", "Ham_WeaponSecondaryAttack_Pre", 0);
@@ -150,10 +150,10 @@ public plugin_init()
 	DisableHookChain(g_hDropPlayerItem = RegisterHookChain(RG_CBasePlayer_DropPlayerItem, "CBasePlayer_DropPlayerItem_Pre", 0));
 	DisableHookChain(g_hPreThink = RegisterHookChain(RG_CBasePlayer_PreThink, "CBasePlayer_PreThink_Post", 1));
 	
-	g_iForwards[DUEL_PRESTART] = CreateMultiForward("dr_duel_prestart", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL);
-	g_iForwards[DUEL_START] = CreateMultiForward("dr_duel_start", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL);
-	g_iForwards[DUEL_FINISH] = CreateMultiForward("dr_duel_finish", ET_IGNORE, FP_CELL, FP_CELL);
-	g_iForwards[DUEL_CANCELED] = CreateMultiForward("dr_duel_canceled", ET_IGNORE, FP_CELL);
+	g_iForwards[FType_PreStart] = CreateMultiForward("dr_duel_prestart", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL);
+	g_iForwards[FType_Start] = CreateMultiForward("dr_duel_start", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL);
+	g_iForwards[FType_Finish] = CreateMultiForward("dr_duel_finish", ET_IGNORE, FP_CELL, FP_CELL);
+	g_iForwards[FType_Canceled] = CreateMultiForward("dr_duel_canceled", ET_IGNORE, FP_CELL);
 	
 	g_iModeDuel = dr_register_mode
 	(
@@ -192,7 +192,7 @@ public native_get_duel(plugin_id, argc)
 	
 	if(size > 0)
 	{
-		set_string(arg_name, g_eDuelWeaponName[g_iCurDuel][7], size);
+		set_string(arg_name, g_szWeaponName[g_iCurDuel][7], size);
 	}
 	
 	return g_iCurDuel;
@@ -294,8 +294,8 @@ public client_disconnected(id)
 {
 	if(g_iCurMode == g_iModeDuel && (id == g_iDuelPlayers[DUELIST_CT] || id == g_iDuelPlayers[DUELIST_T]))
 	{
-		ResetDuel(0);
-		ExecuteForward(g_iForwards[DUEL_CANCELED], g_iReturn, CType_PlayerDisconneced);
+		ResetDuel();
+		ExecuteForward(g_iForwards[FType_Canceled], g_iReturn, CType_PlayerDisconneced);
 	}
 }
 public Command_DuelSpawn(id, flag)
@@ -433,7 +433,7 @@ SaveSpawns(id)
 public Command_Duel(id)
 {
 	if(g_iCurMode == g_iModeDuel || !is_user_alive(id) || get_member(id, m_iTeam) != TEAM_CT) return PLUGIN_HANDLED;
-		
+	
 	new players[32], pnum; get_players(players, pnum, "ae", "CT");
 	if(pnum > 1) return PLUGIN_HANDLED;
 	
@@ -443,20 +443,20 @@ public Command_Duel(id)
 	if(pnum < 1) return PLUGIN_HANDLED;
 	
 	new text[64]; formatex(text, charsmax(text), "%L", id, "DRD_DUEL_CHOOSE");
-	g_iDuelMenu = menu_create(text, "DuelType_Handler");
+	new menu = menu_create(text, "DuelType_Handler");
 	
-	for(new i; i < sizeof(g_eDuelWeaponName); i++)
+	for(new i; i < sizeof(g_szWeaponName); i++)
 	{
-		menu_additem(g_iDuelMenu, g_eDuelWeaponName[i][7]);
+		menu_additem(menu, g_szWeaponName[i][7]);
 	}
 	
 	formatex(text, charsmax(text), "%L", id, "DRD_DUEL_BACK");
-	menu_setprop(g_iDuelMenu, MPROP_BACKNAME, text);
+	menu_setprop(menu, MPROP_BACKNAME, text);
 	formatex(text, charsmax(text), "%L", id, "DRD_DUEL_NEXT");
-	menu_setprop(g_iDuelMenu, MPROP_NEXTNAME, text);
+	menu_setprop(menu, MPROP_NEXTNAME, text);
 	formatex(text, charsmax(text), "%L", id, "DRD_DUEL_EXIT");
-	menu_setprop(g_iDuelMenu, MPROP_EXITNAME, text);
-	menu_display(id, g_iDuelMenu);
+	menu_setprop(menu, MPROP_EXITNAME, text);
+	menu_display(id, menu);
 	
 	return PLUGIN_HANDLED;
 }
@@ -503,7 +503,7 @@ DuelPreStart()
 	g_iDuelTimer = PRESTART_TIME + 1;
 	Task_PreStartTimer();
 	
-	ExecuteForward(g_iForwards[DUEL_PRESTART], g_iReturn, g_iDuelPlayers[DUELIST_T], g_iDuelPlayers[DUELIST_CT], g_iDuelTimer);
+	ExecuteForward(g_iForwards[FType_PreStart], g_iReturn, g_iDuelPlayers[DUELIST_T], g_iDuelPlayers[DUELIST_CT], g_iDuelTimer);
 	
 	client_print_color(0, print_team_default, "%s^1 %L", DRD_PREFIX, LANG_PLAYER, "DRD_DUEL_START_TIME", PRESTART_TIME);
 }
@@ -530,8 +530,8 @@ StartDuelTimer()
 {
 	g_iDuelTimer = DUEL_TIME + 1;
 	Task_DuelTimer();
-	rg_send_audio(0, g_eDuelSounds[SOUND_FIGHT], PITCH_NORM);
-	ExecuteForward(g_iForwards[DUEL_START], g_iReturn, g_iDuelPlayers[DUELIST_T], g_iDuelPlayers[DUELIST_CT], g_iDuelTimer);
+	rg_send_audio(0, g_szSounds[SType_Fight], PITCH_NORM);
+	ExecuteForward(g_iForwards[FType_Start], g_iReturn, g_iDuelPlayers[DUELIST_T], g_iDuelPlayers[DUELIST_CT], g_iDuelTimer);
 }
 public Task_DuelTimer()
 {
@@ -542,7 +542,7 @@ public Task_DuelTimer()
 		ExecuteHam(Ham_Killed, g_iDuelPlayers[DUELIST_CT], g_iDuelPlayers[DUELIST_CT], 0);
 		ExecuteHam(Ham_Killed, g_iDuelPlayers[DUELIST_T], g_iDuelPlayers[DUELIST_T], 0);
 		
-		ExecuteForward(g_iForwards[DUEL_CANCELED], g_iReturn, CType_TimeOver);
+		ExecuteForward(g_iForwards[FType_Canceled], g_iReturn, CType_TimeOver);
 		ResetDuel();
 		
 		client_print_color(0, print_team_default, "%s^1 %L", DRD_PREFIX, LANG_PLAYER, "DRD_TIME_OVER");
@@ -584,8 +584,8 @@ MovePlayerToSpawn(player)
 }
 StartTurnDuel(type)
 {
-	g_iDuelWeapon[DUELIST_CT] = rg_give_item(g_iDuelPlayers[DUELIST_CT], g_eDuelWeaponName[type]);
-	g_iDuelWeapon[DUELIST_T] = rg_give_item(g_iDuelPlayers[DUELIST_T], g_eDuelWeaponName[type]);
+	g_iDuelWeapon[DUELIST_CT] = rg_give_item(g_iDuelPlayers[DUELIST_CT], g_szWeaponName[type]);
+	g_iDuelWeapon[DUELIST_T] = rg_give_item(g_iDuelPlayers[DUELIST_T], g_szWeaponName[type]);
 	
 	new PrimaryAmmoType = get_member(g_iDuelWeapon[DUELIST_CT], m_Weapon_iPrimaryAmmoType);
 	
@@ -593,7 +593,7 @@ StartTurnDuel(type)
 	{
 		if(is_entity(g_iDuelWeapon[DUELIST_CT]) && is_entity(g_iDuelWeapon[DUELIST_T]))
 		{
-			new WeaponIdType:WeaponId = rg_get_weapon_info(g_eDuelWeaponName[type], WI_ID);
+			new WeaponIdType:WeaponId = rg_get_weapon_info(g_szWeaponName[type], WI_ID);
 			rg_set_user_ammo(g_iDuelPlayers[DUELIST_CT], WeaponId, 1);
 			rg_set_user_ammo(g_iDuelPlayers[DUELIST_T], WeaponId, 0);
 		}
@@ -652,7 +652,7 @@ public Ham_WeaponPrimaryAttack_Post(weapon)
 	
 	if(player == g_iDuelPlayers[g_iCurTurn])
 	{
-		rg_send_audio(0, g_eDuelSounds[SOUND_ATTACK], PITCH_NORM);
+		rg_send_audio(0, g_szSounds[SType_Attack], PITCH_NORM);
 		
 		if(!task_exists(TASK_MISSED))
 		{
@@ -665,7 +665,7 @@ public Ham_WeaponPrimaryAttack_Post(weapon)
 		g_iDuelTurnTimer = FIRE_TIME;
 		g_iCurTurn ^= 1;
 		
-		new WeaponIdType:WeaponId = rg_get_weapon_info(g_eDuelWeaponName[g_iCurDuel], WI_ID);
+		new WeaponIdType:WeaponId = rg_get_weapon_info(g_szWeaponName[g_iCurDuel], WI_ID);
 		rg_set_user_ammo(g_iDuelPlayers[g_iCurTurn], WeaponId, 1);
 	}
 	
@@ -689,9 +689,9 @@ public CSGameRules_PlayerKilled_Pre(const victim, const killer, const inflictor)
 		}
 		else
 		{
-			ExecuteForward(g_iForwards[DUEL_CANCELED], g_iReturn, CType_PlayerDied);
+			ExecuteForward(g_iForwards[FType_Canceled], g_iReturn, CType_PlayerDied);
 		}
-		ResetDuel(0);
+		ResetDuel();
 	}
 #if defined SHOW_MENU_FOR_LAST_CT
 	else
@@ -728,31 +728,31 @@ public DuelOffer_Handler(id, item)
 		return PLUGIN_HANDLED;
 	}
 	
-	rg_send_audio(0, g_eDuelSounds[SOUND_COWARD], PITCH_NORM);
+	rg_send_audio(0, g_szSounds[SType_Coward], PITCH_NORM);
 	return PLUGIN_HANDLED;
 }
 #endif
 FinishDuel(winner, looser)
 {
-	ExecuteForward(g_iForwards[DUEL_FINISH], g_iReturn, winner, looser);
+	ExecuteForward(g_iForwards[FType_Finish], g_iReturn, winner, looser);
 	
 	new szWinner[32]; get_entvar(winner, var_netname, szWinner, charsmax(szWinner));
 	client_print_color(0, winner, "%s^1 %L", DRD_PREFIX, LANG_PLAYER, "DRD_DUEL_WINNER", szWinner);
 }
 public CBasePlayer_TakeDamage_Pre(const this, pevInflictor, pevAttacker, Float:flDamage, bitsDamageType)
 {
-	if(this == pevAttacker || (this != g_iDuelPlayers[DUELIST_CT] && this != g_iDuelPlayers[DUELIST_T]))
-	{
-		return HC_CONTINUE;
-	}
+	if(this == pevAttacker) return HC_CONTINUE;
 	
-	if(pevAttacker != g_iDuelPlayers[DUELIST_CT] && pevAttacker != g_iDuelPlayers[DUELIST_T])
+	if(!IsPlayer(pevAttacker) || (pevAttacker != g_iDuelPlayers[DUELIST_CT] && pevAttacker != g_iDuelPlayers[DUELIST_T]))
 	{
 		SetHookChainReturn(ATYPE_INTEGER, 0);
 		return HC_SUPERCEDE;
 	}
 	
-	set_task(0.2, "Task_SendHit", this);
+	if(this != g_iDuelPlayers[DUELIST_CT] && this != g_iDuelPlayers[DUELIST_T])
+	{
+		set_task(0.2, "Task_SendHit", this);
+	}
 	
 	return HC_CONTINUE;
 }
@@ -793,7 +793,7 @@ public dr_selected_mode(id, mode)
 	{
 		ResetDuel();
 		DisableHookChain(g_hTakeDamage);
-		ExecuteForward(g_iForwards[DUEL_CANCELED], g_iReturn, CType_ModeChanged);
+		ExecuteForward(g_iForwards[FType_Canceled], g_iReturn, CType_ModeChanged);
 	}
 	
 	g_iCurMode = mode;
@@ -805,12 +805,9 @@ public dr_selected_mode(id, mode)
 		EnableHookChain(g_hPreThink);
 	}
 }
-ResetDuel(reset = 1)
+ResetDuel()
 {
-	if(reset)
-	{
-		g_iDuelPlayers[DUELIST_CT] = g_iDuelPlayers[DUELIST_T] = 0;
-	}
+	g_iDuelPlayers[DUELIST_CT] = g_iDuelPlayers[DUELIST_T] = 0;
 	
 	DisableHookChain(g_hDropPlayerItem);
 	DisableHookChain(g_hPreThink);
@@ -824,15 +821,15 @@ ResetDuel(reset = 1)
 public Task_SendHit(id)
 {
 	remove_task(TASK_MISSED);
-	rh_emit_sound2(id, 0, CHAN_WEAPON, g_eDuelSounds[random_num(SOUND_HIT1, SOUND_HIT4)][6], random_float(0.5, VOL_NORM), ATTN_NORM, .pitch = PITCH_NORM);
+	rh_emit_sound2(id, 0, CHAN_WEAPON, g_szSounds[random_num(SType_Hit1, SType_Hit4)][6], random_float(0.5, VOL_NORM), ATTN_NORM, .pitch = PITCH_NORM);
 }
 public Task_SendMissed()
 {
-	rg_send_audio(0, g_eDuelSounds[SOUND_MISSED], PITCH_NORM);
+	rg_send_audio(0, g_szSounds[SType_Missed], PITCH_NORM);
 }
 public Task_SendFast()
 {
-	rg_send_audio(0, g_eDuelSounds[SOUND_FAST], PITCH_NORM);
+	rg_send_audio(0, g_szSounds[SType_Fast], PITCH_NORM);
 }
 StopFuncConveyor()
 {
