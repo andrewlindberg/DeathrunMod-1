@@ -749,7 +749,7 @@ public CBasePlayer_TakeDamage_Pre(const this, pevInflictor, pevAttacker, Float:f
 		return HC_SUPERCEDE;
 	}
 	
-	if(this != g_iDuelPlayers[DUELIST_CT] && this != g_iDuelPlayers[DUELIST_T])
+	if(this == g_iDuelPlayers[DUELIST_CT] || this == g_iDuelPlayers[DUELIST_T])
 	{
 		set_task(0.2, "Task_SendHit", this);
 	}
