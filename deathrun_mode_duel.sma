@@ -1,11 +1,11 @@
 #include <amxmodx>
-#include <fun>
-#include <engine>
 #include <hamsandwich>
-#include <deathrun_modes>
-#include <deathrun_duel>
+#include <engine>
+#include <fun>
 #include <xs>
 #include <reapi>
+#include <deathrun_modes>
+#include <deathrun_duel>
 
 #if AMXX_VERSION_NUM < 183
 	#include <colorchat>
@@ -76,6 +76,7 @@ new g_bLoadedSpawns;
 new g_szSpawnsFile[128];
 new g_bSetSpawn[2];
 new g_iMinDistance;
+new g_szAdditionInfo[MAX_NAME_LENGTH];
 
 new Float:g_fColors[2][3] = 
 {
@@ -462,7 +463,7 @@ public Command_Duel(id)
 }
 public DuelType_Handler(id, menu, item)
 {
-	if(item == MENU_EXIT)
+	if(item == MENU_EXIT || !(get_entvar(id, var_flags) & FL_ONGROUND))
 	{
 		menu_destroy(menu);
 		return PLUGIN_HANDLED;
@@ -517,6 +518,9 @@ public Task_PreStartTimer()
 	}
 	else
 	{
+		num_to_str(g_iDuelTimer - 1, g_szAdditionInfo, charsmax(g_szAdditionInfo));
+		dr_set_mode_addinfo(g_szAdditionInfo);
+		
 		client_print(0, print_center, "%L", LANG_PLAYER, "DRD_DUEL_START_TIME", g_iDuelTimer);
 		set_task(1.0, "Task_PreStartTimer", TASK_PRESTART_TIMER);
 	}
@@ -549,6 +553,9 @@ public Task_DuelTimer()
 	}
 	else
 	{
+		formatex(g_szAdditionInfo, charsmax(g_szAdditionInfo), "%d (%s)", g_iDuelTimer, g_szWeaponName[g_iCurDuel][7]);
+		dr_set_mode_addinfo(g_szAdditionInfo);
+		
 		client_cmd(0, "spk buttons/lightswitch2");
 		set_dhudmessage(
 			.red = floatround(g_fColors[g_iCurTurn][0]), 
@@ -738,6 +745,9 @@ FinishDuel(winner, looser)
 	
 	new szWinner[32]; get_entvar(winner, var_netname, szWinner, charsmax(szWinner));
 	client_print_color(0, winner, "%s^1 %L", DRD_PREFIX, LANG_PLAYER, "DRD_DUEL_WINNER", szWinner);
+	
+	formatex(g_szAdditionInfo, charsmax(g_szAdditionInfo), "(Win %s)", szWinner);
+	dr_set_mode_addinfo(g_szAdditionInfo);
 }
 public CBasePlayer_TakeDamage_Pre(const this, pevInflictor, pevAttacker, Float:flDamage, bitsDamageType)
 {
