@@ -18,7 +18,12 @@
 #define IsPlayer(%1) (%1 && %1 <= MaxClients)
 
 #define WARMUP_TIME 20
-#define RESTART_TIME 5
+#define TIME_DELAY 5
+
+enum (+=100)
+{
+	TASKID_JOINING
+};
 
 enum _:Cvars
 {
@@ -189,8 +194,6 @@ public plugin_cfg()
 	set_pcvar_num(g_eCvars[KILL_FILLED_SPAWN], 0);
 	set_pcvar_num(g_eCvars[ENT_INTERSECTION], 1);
 	set_pcvar_num(g_eCvars[RESTART], WARMUP_TIME);
-	
-	ExecuteForward(g_iForwards[FW_WARMUP], g_iReturn, WARMUP_TIME);
 }
 public plugin_natives()
 {
@@ -223,17 +226,17 @@ public native_get_next_terrorist()
 }
 public client_putinserver(id)
 {
-	if(!g_bWarmUp && !is_user_connected(g_iCurrTer))
+	if(!g_bWarmUp && !is_user_connected(g_iCurrTer) && !task_exists(TASKID_JOINING))
 	{
-		set_task(5.0, "Task_CheckToConnect");
+		set_task(TIME_DELAY.0, "Task_JoiningPlayer", TASKID_JOINING);
 	}
 }
-public Task_CheckToConnect()
+public Task_JoiningPlayer()
 {
 	new iPlayers[32], pnum;	pnum = rg_get_players(iPlayers);
 	if(pnum > 1)
 	{
-		rg_round_end(RESTART_TIME.0, WINSTATUS_DRAW, ROUND_GAME_COMMENCE, "Подключение игрока завершено!", .trigger = true);
+		rg_round_end(TIME_DELAY.0, WINSTATUS_DRAW, ROUND_GAME_COMMENCE, "Подключение игрока завершено!", .trigger = true);
 	}
 }
 public client_disconnected(id)
@@ -252,13 +255,13 @@ public client_disconnected(id)
 		else
 		{
 			g_iCurrTer = 0;
-			rg_round_end(RESTART_TIME.0, WINSTATUS_DRAW, ROUND_END_DRAW, "Террорист покинул сервер!", .sentence = "\0");
+			rg_round_end(TIME_DELAY.0, WINSTATUS_DRAW, ROUND_END_DRAW, "Террорист покинул сервер!", .sentence = "\0");
 		}
 	}
 	
 	if(is_user_connected(g_iCurrTer))
 	{
-		set_task(5.0, "Task_CheckLastPlayer");
+		set_task(TIME_DELAY.0, "Task_LastTerrorist");
 	}
 }
 ReplaceTer(NewTer)
@@ -298,13 +301,13 @@ ReplaceTer(NewTer)
 	
 	return NewTer;
 }
-public Task_CheckLastPlayer()
+public Task_LastTerrorist()
 {
 	new iPlayers[32], pnum;	pnum = rg_get_players(iPlayers, .skip_ter = true);
 	if(pnum < 1 && rg_set_user_team(g_iCurrTer, TEAM_CT))
 	{
 		g_iCurrTer = 0;
-		rg_round_end(RESTART_TIME.0, WINSTATUS_DRAW, ROUND_END_DRAW, "Вы последний игрок на сервере!", .sentence = "\0");
+		rg_round_end(TIME_DELAY.0, WINSTATUS_DRAW, ROUND_END_DRAW, "Вы последний игрок на сервере!", .sentence = "\0");
 	}
 }
 //******** Commands ********//
@@ -357,6 +360,12 @@ Float:get_player_eyes_origin(id)
 // ******* ReGameDll *******
 public RoundEnd_Pre(WinStatus:status, ScenarioEventEndRound:event, Float:tmDelay)
 {
+	if(event == ROUND_GAME_RESTART)
+	{
+		ExecuteForward(g_iForwards[FW_WARMUP], g_iReturn, floatround(tmDelay));
+		return HC_CONTINUE;
+	}
+	
 	if(ROUND_CTS_WIN < event > ROUND_END_DRAW) return HC_CONTINUE;
 	
 	set_msg_block(g_msgSendAudio, BLOCK_ONCE);
@@ -493,7 +502,7 @@ stock rg_get_players(players[32], bool:alive = false, skip_ter = false)
 	new TeamName:team, count;
 	for(new i = 1; i <= MaxClients; i++)
 	{
-		if(!is_user_connected(i) || is_user_bot(i)
+		if(!is_user_connected(i) || is_user_bot(i) 
 		|| skip_ter && i == g_iCurrTer 
 		|| alive && !is_user_alive(i)) continue;
 		
