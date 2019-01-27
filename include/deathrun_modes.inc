@@ -62,7 +62,7 @@ native dr_get_mode(name[] = "", size = 0);
  * 
  * @param text			Additional info.
  */
-native dr_set_addition_info(text[] = "");
+native dr_set_mode_addinfo(text[] = "");
 
 /**
  * Get additional mode information.
@@ -70,7 +70,7 @@ native dr_set_addition_info(text[] = "");
  * @param text			text info.
  * @param size			text size.
  */
-native dr_get_addition_info(text[] = "", size = 0);
+native dr_get_mode_addinfo(text[] = "", size = 0);
 
 /**
  * Set new mode.

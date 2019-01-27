@@ -85,8 +85,8 @@ public plugin_natives()
 	register_native("dr_register_mode", "native_register_mode");
 	register_native("dr_set_mode", "native_set_mode");
 	register_native("dr_get_mode", "native_get_mode");
-	register_native("dr_set_addition_info", "native_set_addition_info");
-	register_native("dr_get_addition_info", "native_get_addition_info");
+	register_native("dr_set_mode_addinfo", "native_set_mode_addinfo");
+	register_native("dr_get_mode_addinfo", "native_get_mode_addinfo");
 	register_native("dr_get_mode_by_mark", "native_get_mode_by_mark");
 	register_native("dr_get_mode_info", "native_get_mode_info");
 	register_native("dr_set_mode_bhop", "native_set_mode_bhop");
@@ -177,13 +177,13 @@ public native_get_mode(plugin, params)
 	
 	return g_iCurMode + 1;
 }
-public native_set_addition_info(plugin, params)
+public native_set_mode_addinfo(plugin, params)
 {
 	enum { arg_addition = 1 };
 	
 	get_string(arg_addition, g_szAdditionalInfo, charsmax(g_szAdditionalInfo));
 }
-public native_get_addition_info(plugin, params)
+public native_get_mode_addinfo(plugin, params)
 {
 	enum {
 		arg_addition = 1,

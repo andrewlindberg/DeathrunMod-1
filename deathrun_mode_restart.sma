@@ -64,5 +64,5 @@ public Task_UpdateInfo()
 {
 	new szDuration[MAX_NAME_LENGTH/4];
 	num_to_str(--g_iDuration, szDuration, charsmax(szDuration));
-	dr_set_addition_info(szDuration);
+	dr_set_mode_addinfo(szDuration);
 }
