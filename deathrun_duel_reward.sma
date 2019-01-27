@@ -3,7 +3,7 @@
 #include <deathrun_duel>
 
 #define PLUGIN  "Deathrun Duel: Reward"
-#define VERSION "1.0"
+#define VERSION "1.0.1"
 #define AUTHOR  "CS Royal Project"
 
 enum _:StatusType {
