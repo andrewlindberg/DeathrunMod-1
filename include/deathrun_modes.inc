@@ -12,8 +12,6 @@
 	#pragma library deathrun_modes
 #endif
 
-#include <reapi>
-
 enum _:ModeData
 {
 	m_Name[32],
@@ -58,6 +56,21 @@ native dr_register_mode(Name[32], Hud[64], Mark[16], RoundDelay, CT_BlockWeapons
  * @return					Mode index.
  */
 native dr_get_mode(name[] = "", size = 0);
+
+/**
+ * Set additional mode information.
+ * 
+ * @param text			Additional info.
+ */
+native dr_set_addition_info(text[] = "");
+
+/**
+ * Get additional mode information.
+ * 
+ * @param text			text info.
+ * @param size			text size.
+ */
+native dr_get_addition_info(text[] = "", size = 0);
 
 /**
  * Set new mode.

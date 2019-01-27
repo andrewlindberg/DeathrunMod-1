@@ -37,6 +37,7 @@ new const PREFIX[] = "^4[DRM]";
 new Array:g_aModes, g_iModesNum;
 
 new g_eCurModeInfo[ModeData];
+new g_szAdditionalInfo[MAX_NAME_LENGTH];
 new g_iCurMode = NONE_MODE;
 
 new g_iPage[33], g_iTimer[33], bool:g_bBhop[33];
@@ -69,6 +70,8 @@ public plugin_init()
 	g_eCurModeInfo[m_Name] = "DRM_MODE_NONE";
 	g_eCurModeInfo[m_Bhop] = DEFAULT_BHOP;
 	g_eCurModeInfo[m_Usp] = DEFAULT_USP;
+	
+	g_szAdditionalInfo = "";
 }
 public plugin_cfg()
 {
@@ -82,6 +85,8 @@ public plugin_natives()
 	register_native("dr_register_mode", "native_register_mode");
 	register_native("dr_set_mode", "native_set_mode");
 	register_native("dr_get_mode", "native_get_mode");
+	register_native("dr_set_addition_info", "native_set_addition_info");
+	register_native("dr_get_addition_info", "native_get_addition_info");
 	register_native("dr_get_mode_by_mark", "native_get_mode_by_mark");
 	register_native("dr_get_mode_info", "native_get_mode_info");
 	register_native("dr_set_mode_bhop", "native_set_mode_bhop");
@@ -91,8 +96,7 @@ public plugin_natives()
 }
 public native_register_mode(plugin, params)
 {
-	enum
-	{
+	enum {
 		arg_name = 1,
 		arg_hud,
 		arg_mark,
@@ -127,8 +131,7 @@ public native_register_mode(plugin, params)
 }
 public native_set_mode(plugin, params)
 {
-	enum
-	{
+	enum {
 		arg_mode_index = 1,
 		arg_forward,
 		arg_player_id
@@ -160,8 +163,7 @@ public native_set_mode(plugin, params)
 }
 public native_get_mode(plugin, params)
 {
-	enum
-	{
+	enum {
 		arg_name = 1,
 		arg_size
 	};
@@ -174,6 +176,26 @@ public native_get_mode(plugin, params)
 	}
 	
 	return g_iCurMode + 1;
+}
+public native_set_addition_info(plugin, params)
+{
+	enum { arg_addition = 1 };
+	
+	get_string(arg_addition, g_szAdditionalInfo, charsmax(g_szAdditionalInfo));
+}
+public native_get_addition_info(plugin, params)
+{
+	enum {
+		arg_addition = 1,
+		arg_size
+	};
+	
+	new size = get_param(arg_size);
+	
+	if (size > 0)
+	{
+		set_string(arg_addition, g_szAdditionalInfo, size);
+	}
 }
 public native_get_mode_by_mark(plugin, params)
 {
@@ -194,8 +216,7 @@ public native_get_mode_by_mark(plugin, params)
 }
 public native_get_mode_info(plugin, params)
 {
-	enum
-	{
+	enum {
 		arg_mode_index = 1,
 		arg_info
 	};
@@ -228,8 +249,7 @@ public native_get_mode_bhop(plugin, params)
 }
 public native_set_user_bhop(plugin, params)
 {
-	enum
-	{
+	enum {
 		arg_player_id = 1,
 		arg_bhop
 	};
@@ -322,6 +342,7 @@ public RoundEnd_Post(WinStatus:status, ScenarioEventEndRound:event, Float:tmDela
 public CSGameRules_RestartRound_Pre()
 {
 	g_iCurMode = NONE_MODE;
+	g_szAdditionalInfo = "";
 	g_eCurModeInfo[m_Name] = "DRM_MODE_NONE";
 	g_eCurModeInfo[m_Bhop] = DEFAULT_BHOP;
 	g_eCurModeInfo[m_Usp] = DEFAULT_USP;
