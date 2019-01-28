@@ -30,8 +30,6 @@ enum (+=100)
 	TASK_SHOWMENU = 100
 };
 
-#define NONE_MODE -1
-
 new const PREFIX[] = "^4[DRM]";
 
 new Array:g_aModes, g_iModesNum;
@@ -40,7 +38,7 @@ new g_eCurModeInfo[ModeData];
 new g_szAdditionalInfo[MAX_NAME_LENGTH];
 new g_iCurMode = NONE_MODE;
 
-new g_iPage[33], g_iTimer[33], bool:g_bBhop[33];
+new g_iPage[MAX_PLAYERS + 1], g_iTimer[MAX_PLAYERS + 1], bool:g_bBhop[MAX_PLAYERS + 1];
 
 new g_fwSelectedMode, g_fwReturn;
 

@@ -12,6 +12,8 @@
 	#pragma library deathrun_modes
 #endif
 
+#define NONE_MODE -1
+
 enum _:ModeData
 {
 	m_Name[32],
