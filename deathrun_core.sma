@@ -17,8 +17,10 @@
 
 #define IsPlayer(%1) (%1 && %1 <= MaxClients)
 
+#define MAX_MONEY 1000000
 #define WARMUP_TIME 20
 #define TIME_DELAY 5
+#define RESPAWN_DELAY 3
 
 enum (+=100)
 {
@@ -63,7 +65,7 @@ new g_iForwards[Forwards], g_iReturn;
 new g_iForwardSpawn, Trie:g_tRemoveEntities;
 new g_msgSendAudio, g_msgAmmoPickup, g_msgWeapPickup;
 new g_iOldAmmoPickupBlock, g_iOldWeapPickupBlock, g_iCurrTer, g_iNextTer;
-new g_bWarmUp = true, Float:g_fRespawnDelay = 3.0;
+new g_bWarmUp = true;
 
 public plugin_init()
 {
@@ -181,13 +183,13 @@ public plugin_cfg()
 	set_pcvar_num(g_eCvars[LIMITTEAMS], 0);
 	set_pcvar_num(g_eCvars[AUTOTEAMBALANCE], 0);
 	set_pcvar_num(g_eCvars[BUYTIME], 0);
-	set_pcvar_num(g_eCvars[MAXMONEY], 1000000);
+	set_pcvar_num(g_eCvars[MAXMONEY], MAX_MONEY);
 	set_pcvar_string(g_eCvars[ROUND_INFINITE], "abcdeg");
 	set_pcvar_num(g_eCvars[ROUNDRESPAWN_TIME], WARMUP_TIME);
 	set_pcvar_num(g_eCvars[AUTO_JOIN_TEAM], 1);
 	set_pcvar_string(g_eCvars[HUMANS_JOIN_TEAM], "CT");
 	set_pcvar_num(g_eCvars[TEAMKILLS], 0);
-	set_pcvar_float(g_eCvars[FORCERESPAWN], g_fRespawnDelay);
+	set_pcvar_float(g_eCvars[FORCERESPAWN], RESPAWN_DELAY.0);
 	set_pcvar_num(g_eCvars[RADIOICON], 0);
 	set_pcvar_num(g_eCvars[ALLTALK], 1);
 	set_pcvar_num(g_eCvars[RESPAWN_IMMUNITYTIME], 5);
@@ -405,13 +407,10 @@ public CBasePlayer_TraceAttack_Pre(const this, pevAttacker, Float:flDamage, Floa
 }
 public CBasePlayer_TakeDamage_Pre(const this, pevInflictor, pevAttacker, Float:flDamage, bitsDamageType)
 {
-	if(flDamage < 0.0)
-	{
-		SetHookChainReturn(ATYPE_INTEGER, false);
-		return HC_SUPERCEDE;
-	}
+	if(flDamage >= 0.0) return HC_CONTINUE;
 	
-	return HC_CONTINUE;
+	SetHookChainReturn(ATYPE_INTEGER, false);
+	return HC_SUPERCEDE;
 }
 public CBasePlayer_AddAccount_Pre(const pPlayer, amount, RewardType:type, bool:bTrackChange)
 {
@@ -424,14 +423,11 @@ public CBasePlayer_AddAccount_Pre(const pPlayer, amount, RewardType:type, bool:b
 }
 public CSGameRules_FlPlayerFallDamage_Pre(const index)
 {
-	if(get_pcvar_num(g_eCvars[BLOCK_FALLDMG]) && get_member(index, m_iTeam) == TEAM_TERRORIST)
-	{
-		// Remove the damage to the terrorist when falling from height
-		SetHookChainReturn(ATYPE_FLOAT, 0.0);
-		return HC_SUPERCEDE;
-	}
+	if(!get_pcvar_num(g_eCvars[BLOCK_FALLDMG]) || get_member(index, m_iTeam) != TEAM_TERRORIST) return HC_CONTINUE;
 	
-	return HC_CONTINUE;
+	// Remove the damage to the terrorist when falling from height
+	SetHookChainReturn(ATYPE_FLOAT, 0.0);
+	return HC_SUPERCEDE;
 }
 public CSGameRules_RestartRound_Pre()
 {
