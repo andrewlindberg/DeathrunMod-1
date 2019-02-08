@@ -30,9 +30,9 @@
 
 new const SPAWNS_DIR[] = "deathrun_duel";
 
-enum (+=100)
+enum (+=468)
 {
-	TASK_TURNCHANGER = 548679,
+	TASK_TURNCHANGER = 468,
 	TASK_PRESTART_TIMER,
 	TASK_DUELTIMER,
 	TASK_MISSED,
@@ -311,9 +311,9 @@ public Show_DuelSpawnControlMenu(id)
 {
 	new text[64]; formatex(text, charsmax(text), "%L", id, "DRD_DUEL_SPAWN");
 	new menu = menu_create(text, "DuelSpawnControl_Handler");
-	formatex(text, charsmax(text), "%L", id, "DRD_SPAWN_SET_CT");
+	formatex(text, charsmax(text), "%L", id, "DRD_DUEL_SPAWN_SET_CT");
 	menu_additem(menu, text);
-	formatex(text, charsmax(text), "%L", id, "DRD_SPAWN_SET_T");
+	formatex(text, charsmax(text), "%L", id, "DRD_DUEL_SPAWN_SET_T");
 	menu_additem(menu, text);
 	formatex(text, charsmax(text), "%L", id, g_bShowSpawns ? "DRD_DUEL_SPAWN_TYPE_HIDE" : "DRD_DUEL_SPAWN_TYPE_SHOW");
 	menu_additem(menu, text);
