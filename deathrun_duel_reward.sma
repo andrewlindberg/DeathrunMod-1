@@ -12,7 +12,7 @@ enum _:StatusType {
 }
 
 new g_iStatusPlayers[StatusType];
-new g_iWinStreak[MAX_CLIENTS + 1];
+new g_iWinStreak[MAX_PLAYERS + 1];
 
 new HookChain:g_hAddAccount;
 
@@ -35,10 +35,10 @@ public CBasePlayer_AddAccount_Pre(const pPlayer, amount, RewardType:type, bool:b
 	new looser = g_iStatusPlayers[SType_Looser];
 	new szWinner[MAX_NAME_LENGTH]; get_entvar(pPlayer, var_netname, szWinner, charsmax(szWinner));
 	
-	if(g_iWinStreak[looser] > 1)
+	if(g_iWinStreak[looser] > iWinStreak)
 	{
 		iWinStreak += g_iWinStreak[looser];
-		client_print_color(0, pPlayer, "%s^1 %L", DRD_PREFIX, LANG_PLAYER, "DRD_DUEL_KILLSTREAK", szWinner, g_iWinStreak[looser]);
+		client_print_color(0, pPlayer, "%s^1 %L", DRD_PREFIX, LANG_PLAYER, "DRD_DUEL_WINSTREAK", szWinner, g_iWinStreak[looser]);
 	}
 	
 	if(iWinStreak > 1)
