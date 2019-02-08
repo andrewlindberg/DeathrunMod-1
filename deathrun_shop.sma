@@ -16,7 +16,7 @@
 
 enum _:ShopItem
 {
-	ItemName[32],
+	ItemName[MAX_NAME_LENGTH],
 	ItemCost,
 	ItemTeam,
 	ItemCanGift,
@@ -31,7 +31,7 @@ new const PREFIX[] = "^4[DRS]";
 new Array:g_aShopItems;
 new g_iShopTotalItems;
 new g_hCallbackDisabled;
-new g_szItemAddition[32];
+new g_szItemAddition[MAX_NAME_LENGTH];
 
 public plugin_init()
 {
@@ -82,7 +82,7 @@ public native_add_item(plugin, params)
 		item_info[ItemAccess] = get_param(arg_access);
 		item_info[ItemPlugin] = plugin;
 		
-		new function[32]; get_string(arg_onbuy, function, charsmax(function));
+		new function[MAX_NAME_LENGTH]; get_string(arg_onbuy, function, charsmax(function));
 		item_info[ItemOnBuy] = get_func_id(function, plugin);
 		
 		get_string(arg_canbuy, function, charsmax(function));
@@ -116,7 +116,7 @@ public native_set_item_cost(plugin, params)
 	
 	new item = get_param(arg_item);
 	
-	if (item < 0 || item >= g_iShopTotalItems)
+	if(item < 0 || item >= g_iShopTotalItems)
 	{
 		log_error(AMX_ERR_NATIVE, "[DRS] Set item cost: wrong item index! index %d", item);
 		return 0;
@@ -137,16 +137,17 @@ public Command_Shop(id)
 }
 Show_ShopMenu(id, page)
 {
-	if (!g_iShopTotalItems) return;
+	if(!g_iShopTotalItems) return;
 	
 	new flags = get_user_flags(id);
-	new text[256], len; len = formatex(text, charsmax(text), "\d%L^n%L", id, "DRS_MENU_TITLE", id, "DRS_MENU_DISCOUNT", get_percent(flags));
+	new text[MAX_MENU_LENGTH], len; 
+	len = formatex(text, charsmax(text), "\d%L^n%L", id, "DRS_MENU_TITLE", id, "DRS_MENU_DISCOUNT", get_percent(flags));
 	new menu = menu_create(text, "ShopMenu_Handler");
 	
-	new target = observer_target(id);
-	if (target != id)
+	new target = re_observer_target(id);
+	if(target != id)
 	{
-		formatex(text[len], charsmax(text) - len, "^n%L", id, "DRS_MENU_INFO");
+		len += formatex(text[len], charsmax(text) - len, "^n%L", id, "DRS_MENU_INFO");
 	}
 	
 	new szCanGift[5], hCallback, szNum[2], item_info[ShopItem];
@@ -157,10 +158,10 @@ Show_ShopMenu(id, page)
 		g_szItemAddition = "";
 		ArrayGetArray(g_aShopItems, i, item_info);
 		
-		if (~item_info[ItemTeam] & team) continue;
+		if(~item_info[ItemTeam] & team) continue;
 		
 		szCanGift = "";
-		if (target != id && item_info[ItemCanGift])
+		if(target != id && item_info[ItemCanGift])
 		{
 			szCanGift = " \r*";
 		}
@@ -183,7 +184,7 @@ Show_ShopMenu(id, page)
 }
 public ShopMenu_Handler(id, menu, item)
 {
-	if (item == MENU_EXIT)
+	if(item == MENU_EXIT)
 	{
 		menu_destroy(menu);
 		return PLUGIN_HANDLED;
@@ -196,36 +197,37 @@ public ShopMenu_Handler(id, menu, item)
 	new item_index = szInfo[0];
 	new item_info[ShopItem]; ArrayGetArray(g_aShopItems, item_index, item_info);
 	
-	new target = observer_target(id);
+	new target = re_observer_target(id);
 	new team = (1 << _:get_member(target, m_iTeam));
 	
-	if ((~item_info[ItemTeam] & team) || GetCanBuyAnswer(target, item_info[ItemCanBuy]) != ITEM_ENABLED)
+	if((~item_info[ItemTeam] & team) || GetCanBuyAnswer(target, item_info[ItemCanBuy]) != ITEM_ENABLED)
 	{
-		client_print_color(id, print_team_default, "%s^1 %L", PREFIX, id, "DRS_CHAT_CANT_BUY");
+		client_print_color(id, id, "%s^1 %L", PREFIX, id, "DRS_CHAT_CANT_BUY");
 		return PLUGIN_HANDLED;
 	}
 	
 	new flags = get_user_flags(id);
-	new money = get_member(id, m_iAccount) - get_discount(item_info[ItemCost], flags);
+	new money = get_discount(item_info[ItemCost], flags);
+	new need_money = get_member(id, m_iAccount) - money;
 	
-	if (money < 0)
+	if(need_money < 0)
 	{
-		client_print_color(id, print_team_default, "%s^1 %L", PREFIX, id, "DRS_CHAT_NEED_MORE_MONEY", -money);
+		client_print_color(id, target, "%s^1 %L", PREFIX, id, "DRS_CHAT_NEED_MORE_MONEY", -need_money);
 	}
 	else
 	{
-		new id_netname[32]; get_entvar(id, var_netname, id_netname, charsmax(id_netname));
-		if (target == id)
+		new id_netname[MAX_NAME_LENGTH]; get_entvar(id, var_netname, id_netname, charsmax(id_netname));
+		if(target == id)
 		{
-			client_print_color(id, print_team_default, "%s^1 %L", PREFIX, id, "DRS_CHAT_BOUGHT_ITEM", item_info[ItemName], id_netname);
+			client_print_color(id, id, "%s^1 %L", PREFIX, id, "DRS_CHAT_BOUGHT_ITEM", item_info[ItemName], id_netname);
 		}
 		else
 		{
-			new target_netname[32]; get_entvar(target, var_netname, target_netname, charsmax(target_netname));
-			client_print_color(0, print_team_default, "%s^1 %L", PREFIX, id, "DRS_CHAT_BOUGHT_GIFT", id_netname, item_info[ItemName], target_netname);
+			new target_netname[MAX_NAME_LENGTH]; get_entvar(target, var_netname, target_netname, charsmax(target_netname));
+			client_print_color(0, id, "%s^1 %L", PREFIX, id, "DRS_CHAT_BOUGHT_GIFT", id_netname, item_info[ItemName], target_netname);
 		}
-
-		set_member(id, m_iAccount, money);
+		
+		rg_add_account(id, -money);
 		
 		// public OnBuyItem(id);
 		callfunc_begin_i(item_info[ItemOnBuy], item_info[ItemPlugin]);
@@ -238,42 +240,45 @@ public ShopMenu_Handler(id, menu, item)
 }
 GetCanBuyAnswer(id, callback)
 {
-	if (!callback) return ITEM_ENABLED;
+	if(!callback) return ITEM_ENABLED;
 	new return_value; ExecuteForward(callback, return_value, id);
 	return return_value;
 }
-get_discount(cost = 0, flags = 0)
+get_discount(cost = 0, flags = ADMIN_ALL)
 {
 	new percent = get_percent(flags);
 	
-	if (cost > 0 && percent > 0)
+	if(cost > 0 && percent > 0)
 	{
 		cost -= (cost * percent / 100);
 	}
 	
 	return cost;
 }
-get_percent(flags = 0)
+get_percent(flags = ADMIN_ALL)
 {
-	if (flags > 0 && !(flags & ADMIN_USER))
+	if(flags > ADMIN_ALL && !(flags & ADMIN_USER))
 	{
 		return ADMIN_DISCOUNT;
 	}
 	
 	new percent = 0;
 	new hours; time(.hour = hours);
+	switch (hours)
 	{
-		switch (hours)
-		{
-			case 0..6: percent = 25;
-			case 7..12: percent = 15;
-			case 19..23: percent = 10;
-		}
+		case 0..6: percent = 25;
+		case 7..12: percent = 15;
+		case 19..23: percent = 10;
 	}
 	return percent;
 }
-stock observer_target(id)
+stock re_observer_target(id)
 {
 	new iSpecmode = get_entvar(id, var_iuser1);
-	return (iSpecmode == OBS_CHASE_LOCKED || iSpecmode == OBS_CHASE_FREE || iSpecmode == OBS_IN_EYE) ? get_entvar(id, var_iuser2) : id;
+	if(iSpecmode == OBS_CHASE_LOCKED || iSpecmode == OBS_CHASE_FREE || iSpecmode == OBS_IN_EYE)
+	{
+		return get_entvar(id, var_iuser2);
+	}
+	
+	return id;
 }
