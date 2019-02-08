@@ -1,4 +1,5 @@
 #include <amxmodx>
+#include <reapi>
 #include <deathrun_modes>
 
 #pragma semicolon 1
@@ -34,10 +35,10 @@ public plugin_init()
 		.RoundDelay = 5,
 		.CT_BlockWeapons = 1,
 		.TT_BlockWeapons = 1,
-		.CT_BlockButtons = 1,
+		.CT_BlockButtons = 0,
 		.TT_BlockButtons = 1,
 		.Bhop = 1,
-		.Usp = 1,
+		.Usp = 0,
 		.Hide = 0
 	);
 }
