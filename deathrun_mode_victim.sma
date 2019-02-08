@@ -1,4 +1,5 @@
 #include <amxmodx>
+#include <reapi>
 #include <deathrun_modes>
 
 #pragma semicolon 1
@@ -25,7 +26,7 @@ public plugin_init()
 		.RoundDelay = 3,
 		.CT_BlockWeapons = 0,
 		.TT_BlockWeapons = 0,
-		.CT_BlockButtons = 1,
+		.CT_BlockButtons = 0,
 		.TT_BlockButtons = 1,
 		.Bhop = 1,
 		.Usp = 1,
@@ -41,8 +42,8 @@ public dr_selected_mode(id, mode)
 	{
 		new players[32], pnum; get_players(players, pnum, "ae", "CT");
 		
-		new health_multiplier = HEALTH_START * pnum;
-		set_member(id, m_iClientHealth, health_multiplier);
+		new Float: health_multiplier = HEALTH_START.0 * pnum;
+		set_entvar(id, var_health, health_multiplier);
 		
 		for(new i = 0, player; i < pnum; i++)
 		{
