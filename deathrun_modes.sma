@@ -397,12 +397,8 @@ public CBasePlayer_Jump_Pre(const this)
 		return HC_CONTINUE;
 	}
 
-	new Float:velocity[3];
-	{
-		get_entvar(this, var_velocity, velocity);
-		velocity[2] = 250.0;
-		set_entvar(this, var_velocity, velocity);
-	}
+	new Float:velocity[3]; get_entvar(this, var_velocity, velocity);
+	velocity[2] = 250.0; set_entvar(this, var_velocity, velocity);
 	
 	set_entvar(this, var_gaitsequence, 6);
 	set_entvar(this, var_fuser2, 0);
