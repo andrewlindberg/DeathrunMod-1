@@ -139,10 +139,79 @@ native bool:dr_get_user_bhop(id);
  */
 forward dr_selected_mode(id, mode);
 
-stock rg_set_entity_rendering(entity, fx = kRenderFxNone, Float:rgb[3] = {255.0,255.0,255.0}, render = kRenderNormal, Float:amount = 16.0)
+stock rg_set_entity_rendering(entity, fx = kRenderFxNone, Float:rgb[3] = { 255.0, 255.0, 255.0 }, render = kRenderNormal, Float:amount = 16.0)
 {
 	set_entvar(entity, var_renderfx, fx);
 	set_entvar(entity, var_rendercolor, rgb);
 	set_entvar(entity, var_rendermode, render);
 	set_entvar(entity, var_renderamt, amount);
 }
+
+// Accelerate mode for bhop
+
+/**
+ * Set accelerate.
+ * 
+ * @param id				Player index.
+ * @param value				Max accelerate value.
+ */
+native dr_set_player_accelerator(id, Float: value);
+
+/**
+ * Reset accelerate.
+ * 
+ * @param id				Player index.
+ */
+native dr_reset_player_accelerator(id);
+
+// Multi hop mode
+
+/**
+ * Set multi hop.
+ * 
+ * @param id				Player index.
+ * @param value				Max hop value.
+ */
+native dr_set_player_multihop(id, value);
+
+/**
+ * Reset multi hop.
+ * 
+ * @param id				Player index.
+ */
+native dr_reset_player_multihop(id);
+
+// Maxspeed mode
+
+/**
+ * Set maxspeed.
+ * 
+ * @param id				Player index.
+ * @param value				Max speed value.
+ * @param multiplier		Multiplier.
+ */
+native dr_set_player_maxspeed(id, Float: value, bool: multiplier = false);
+
+/**
+ * Reset maxspeed.
+ * 
+ * @param id				Player index.
+ */
+native dr_reset_player_maxspeed(id);
+
+// Gravity mode
+
+/**
+ * Set gravity.
+ * 
+ * @param id				Player index.
+ * @param value				Gravity value.
+ */
+native dr_set_player_gravity(id, Float: value);
+
+/**
+ * Reset gravity.
+ * 
+ * @param id				Player index.
+ */
+native dr_reset_player_gravity(id);
