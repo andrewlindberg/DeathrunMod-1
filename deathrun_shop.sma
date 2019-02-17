@@ -140,7 +140,7 @@ Show_ShopMenu(id, page)
 	if(!g_iShopTotalItems) return;
 	
 	new flags = get_user_flags(id);
-	new text[MAX_MENU_LENGTH], len; 
+	new text[MAX_MENU_LENGTH], len;
 	len = formatex(text, charsmax(text), "\d%L^n%L", id, "DRS_MENU_TITLE", id, "DRS_MENU_DISCOUNT", get_percent(flags));
 	new menu = menu_create(text, "ShopMenu_Handler");
 	
@@ -216,23 +216,30 @@ public ShopMenu_Handler(id, menu, item)
 	}
 	else
 	{
-		new id_netname[MAX_NAME_LENGTH]; get_entvar(id, var_netname, id_netname, charsmax(id_netname));
-		if(target == id)
-		{
-			client_print_color(id, id, "%s^1 %L", PREFIX, id, "DRS_CHAT_BOUGHT_ITEM", item_info[ItemName], id_netname);
-		}
-		else
-		{
-			new target_netname[MAX_NAME_LENGTH]; get_entvar(target, var_netname, target_netname, charsmax(target_netname));
-			client_print_color(0, id, "%s^1 %L", PREFIX, id, "DRS_CHAT_BOUGHT_GIFT", id_netname, item_info[ItemName], target_netname);
-		}
-		
-		rg_add_account(id, -money);
-		
 		// public OnBuyItem(id);
-		callfunc_begin_i(item_info[ItemOnBuy], item_info[ItemPlugin]);
-		callfunc_push_int(target);
-		callfunc_end();
+		if(callfunc_begin_i(item_info[ItemOnBuy], item_info[ItemPlugin]))
+		{
+			new failed_buy;
+			callfunc_push_int(target);
+			callfunc_push_intrf(failed_buy);
+			callfunc_end();
+			
+			if(!failed_buy)
+			{
+				new id_netname[MAX_NAME_LENGTH]; get_entvar(id, var_netname, id_netname, charsmax(id_netname));
+				if(target == id)
+				{
+					client_print_color(id, id, "%s^1 %L", PREFIX, id, "DRS_CHAT_BOUGHT_ITEM", item_info[ItemName], id_netname);
+				}
+				else
+				{
+					new target_netname[MAX_NAME_LENGTH]; get_entvar(target, var_netname, target_netname, charsmax(target_netname));
+					client_print_color(0, id, "%s^1 %L", PREFIX, id, "DRS_CHAT_BOUGHT_GIFT", id_netname, item_info[ItemName], target_netname);
+				}
+				
+				rg_add_account(id, -money);
+			}
+		}
 	}
 	
 	Show_ShopMenu(id, item / 7);
