@@ -165,7 +165,7 @@ public FakeMeta_Spawn_Pre(ent)
 {
 	if(!is_entity(ent)) return FMRES_IGNORED;
 	
-	static szClassName[32]; get_entvar(ent, var_classname, szClassName, charsmax(szClassName));
+	static szClassName[MAX_NAME_LENGTH]; get_entvar(ent, var_classname, szClassName, charsmax(szClassName));
 	
 	if(TrieKeyExists(g_tRemoveEntities, szClassName))
 	{
@@ -184,7 +184,7 @@ public plugin_cfg()
 	set_pcvar_num(g_eCvars[AUTOTEAMBALANCE], 0);
 	set_pcvar_num(g_eCvars[BUYTIME], 0);
 	set_pcvar_num(g_eCvars[MAXMONEY], MAX_MONEY);
-	set_pcvar_string(g_eCvars[ROUND_INFINITE], "abcdeg");
+	set_pcvar_string(g_eCvars[ROUND_INFINITE], "abcdefg");
 	set_pcvar_num(g_eCvars[ROUNDRESPAWN_TIME], WARMUP_TIME);
 	set_pcvar_num(g_eCvars[AUTO_JOIN_TEAM], 1);
 	set_pcvar_string(g_eCvars[HUMANS_JOIN_TEAM], "CT");
@@ -235,35 +235,42 @@ public client_putinserver(id)
 }
 public Task_JoiningPlayer()
 {
-	new iPlayers[32], pnum;	pnum = rg_get_players(iPlayers);
+	new iPlayers[MAX_PLAYERS], pnum;	pnum = rg_get_players(iPlayers);
 	if(pnum > 1)
 	{
 		rg_round_end(TIME_DELAY.0, WINSTATUS_DRAW, ROUND_GAME_COMMENCE, "Подключение игрока завершено!", .trigger = true);
 	}
 }
-public client_disconnected(id)
+public client_remove(id)
+// public client_disconnected(id)
 {
+	new iPlayers[MAX_PLAYERS], pnum;
 	if(id == g_iCurrTer)
 	{
-		new iPlayers[32], pnum;	pnum = rg_get_players(iPlayers, true, true);
+		pnum = rg_get_players(iPlayers, true);
 		if(pnum > 1)
 		{
 			g_iCurrTer = ReplaceTer(iPlayers[random(pnum)]);
 			
-			new szName[32]; get_entvar(g_iCurrTer, var_netname, szName, charsmax(szName));
-			new szNameLeaver[32]; get_entvar(id, var_netname, szNameLeaver, charsmax(szNameLeaver));
+			new szName[MAX_NAME_LENGTH]; get_entvar(g_iCurrTer, var_netname, szName, charsmax(szName));
+			new szNameLeaver[MAX_NAME_LENGTH]; get_entvar(id, var_netname, szNameLeaver, charsmax(szNameLeaver));
 			client_print_color(0, print_team_red, "%s %L", PREFIX, LANG_PLAYER, "DRC_TERRORIST_LEFT", szNameLeaver, szName);
 		}
 		else
 		{
-			g_iCurrTer = 0;
 			rg_round_end(TIME_DELAY.0, WINSTATUS_DRAW, ROUND_END_DRAW, "Террорист покинул сервер!", .sentence = "\0");
+			
+			g_iCurrTer = 0;
 		}
 	}
 	
-	if(is_user_connected(g_iCurrTer))
+	pnum = rg_get_players(iPlayers);
+	if(pnum == 1 && is_user_connected(g_iCurrTer))
 	{
-		set_task(TIME_DELAY.0, "Task_LastTerrorist");
+		rg_set_user_team(g_iCurrTer, TEAM_CT);
+		rg_round_end(TIME_DELAY.0, WINSTATUS_DRAW, ROUND_END_DRAW, "Вы последний игрок на сервере!", .sentence = "\0");
+		
+		g_iCurrTer = 0;
 	}
 }
 ReplaceTer(NewTer)
@@ -305,12 +312,6 @@ ReplaceTer(NewTer)
 }
 public Task_LastTerrorist()
 {
-	new iPlayers[32], pnum;	pnum = rg_get_players(iPlayers, .skip_ter = true);
-	if(pnum < 1 && rg_set_user_team(g_iCurrTer, TEAM_CT))
-	{
-		g_iCurrTer = 0;
-		rg_round_end(TIME_DELAY.0, WINSTATUS_DRAW, ROUND_END_DRAW, "Вы последний игрок на сервере!", .sentence = "\0");
-	}
 }
 //******** Commands ********//
 public Command_ChooseTeam(id)
@@ -434,6 +435,7 @@ public CSGameRules_RestartRound_Pre()
 	if(get_member_game(m_bCompleteReset))
 	{
 		g_bWarmUp = false;
+		set_pcvar_string(g_eCvars[ROUND_INFINITE], "abcdeg");
 		set_pcvar_num(g_eCvars[FORCERESPAWN], 0);
 		ExecuteForward(g_iForwards[FW_WARMUP], g_iReturn, 0);
 	}
@@ -445,7 +447,7 @@ public CSGameRules_RestartRound_Pre()
 }
 TeamBalance()
 {
-	new iPlayers[32], pnum; pnum = rg_get_players(iPlayers, false, true);
+	new iPlayers[MAX_PLAYERS], pnum; pnum = rg_get_players(iPlayers, .skip_ter = true);
 	
 	if(pnum < 1 || pnum == 1 && !is_user_connected(g_iCurrTer)) return;
 	
@@ -462,7 +464,7 @@ TeamBalance()
 	}
 	
 	rg_set_user_team(g_iCurrTer, TEAM_TERRORIST);
-	new szName[32]; get_entvar(g_iCurrTer, var_netname, szName, charsmax(szName));
+	new szName[MAX_NAME_LENGTH]; get_entvar(g_iCurrTer, var_netname, szName, charsmax(szName));
 	client_print_color(0, print_team_red, "%s %L", PREFIX, LANG_PLAYER, "DRC_BECAME_TERRORIST", szName);
 }
 public CSGameRules_RestartRound_Post()
@@ -473,7 +475,7 @@ TerroristCheck()
 {
 	if(!is_user_connected(g_iCurrTer))
 	{
-		new players[32], pnum; get_players(players, pnum, "ae", "TERRORIST");
+		new players[MAX_PLAYERS], pnum; get_players(players, pnum, "ae", "TERRORIST");
 		g_iCurrTer = pnum ? players[0] : 0;
 	}
 	
@@ -493,7 +495,7 @@ public Engine_TouchFuncDoor(ent, toucher)
 	}
 }
 // ********************* //
-stock rg_get_players(players[32], bool:alive = false, skip_ter = false)
+stock rg_get_players(players[MAX_PLAYERS], bool:alive = false, skip_ter = false)
 {
 	new TeamName:team, count;
 	for(new i = 1; i <= MaxClients; i++)
@@ -533,6 +535,6 @@ stock bool:allow_press_button(ent, Float:start[3], Float:end[3], bool:ignore_pla
 }
 stock bool:UTIL_IsTargetActivate(const ent)
 {
-	new target_name[32]; get_entvar(ent, var_targetname, target_name, charsmax(target_name));
+	new target_name[MAX_NAME_LENGTH]; get_entvar(ent, var_targetname, target_name, charsmax(target_name));
 	return (target_name[0]) ? false : true;
 }
