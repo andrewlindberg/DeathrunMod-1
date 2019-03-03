@@ -141,7 +141,7 @@ Show_ShopMenu(id, page)
 	
 	new flags = get_user_flags(id);
 	new text[MAX_MENU_LENGTH], len;
-	len = formatex(text, charsmax(text), "\d%L^n%L", id, "DRS_MENU_TITLE", id, "DRS_MENU_DISCOUNT", get_percent(flags));
+	len = formatex(text, charsmax(text), "\d%L^n%L\R", id, "DRS_MENU_TITLE", id, "DRS_MENU_DISCOUNT", get_percent(flags));
 	new menu = menu_create(text, "ShopMenu_Handler");
 	
 	new target = re_observer_target(id);
