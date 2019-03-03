@@ -20,7 +20,7 @@ public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 	
-	RegisterHookChain(RG_CSGameRules_RestartRound, "CSGameRules_RestartRound_Post", .post = true);
+	RegisterHookChain(RG_CSGameRules_RestartRound, "CSGameRules_RestartRound_Pre", .post = false);
 	
 	dr_shop_add_item(
 		.name = "Дигл", 
@@ -51,7 +51,7 @@ public dr_selected_mode(id, mode)
 	}
 }
 
-public CSGameRules_RestartRound_Post()
+public CSGameRules_RestartRound_Pre()
 {
 	for(new player = 1; player <= MaxClients; player++)
 	{
@@ -63,7 +63,7 @@ public CSGameRules_RestartRound_Post()
 public ShopItem_Deagle(id)
 {
 	g_bDeagle[id] = true;
-	rg_give_item(id, "weapon_deagle", GT_REPLACE);
+	rg_give_item(id, "weapon_deagle");
 }
 
 // *********** Can Buy ***********

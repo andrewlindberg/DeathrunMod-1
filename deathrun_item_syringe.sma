@@ -30,7 +30,7 @@ public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 	
-	RegisterHookChain(RG_CSGameRules_RestartRound, "CSGameRules_RestartRound_Post", .post = true);
+	RegisterHookChain(RG_CSGameRules_RestartRound, "CSGameRules_RestartRound_Pre", .post = false);
 
 	dr_shop_add_item(
 		.name = "Стимулятор 100hp", 
@@ -58,7 +58,7 @@ public dr_selected_mode(id, mode)
 	}
 }
 
-public CSGameRules_RestartRound_Post()
+public CSGameRules_RestartRound_Pre()
 {
 	for(new player = 1; player <= MaxClients; player++)
 	{
@@ -125,14 +125,12 @@ public Task_SetSyringeHealth(id)
 	set_entvar(id, var_health, DEFAULT_HEALTH.0);
 }
 
-public Task_Remove_Syringe_Model(id)
+public Task_Remove_SyringeModel(id)
 {
 	id -= TASKID_REMOVE_SYRINGE;
 	
-	if(!is_user_alive(id)) return;
-	
 	new iActiveItem = get_member(id, m_pActiveItem);
-	if(iActiveItem > 0)
+	if(!is_nullent(iActiveItem))
 	{
 		ExecuteHamB(Ham_Item_Deploy, iActiveItem);
 	}

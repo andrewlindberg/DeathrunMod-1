@@ -9,6 +9,8 @@
 #define VERSION "Re 0.2"
 #define AUTHOR "CS Royal Project"
 
+#define CUSTOM_GRAVITY 0.6
+
 new g_bGravity[MAX_PLAYERS + 1];
 
 new g_iCurMode;
@@ -18,7 +20,8 @@ public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 	
-	RegisterHookChain(RG_CSGameRules_RestartRound, "CSGameRules_RestartRound_Post", .post = true);
+	RegisterHookChain(RG_CSGameRules_RestartRound, "CSGameRules_RestartRound_Pre", .post = false);
+	RegisterHookChain(RG_CSGameRules_PlayerSpawn, "CSGameRules_PlayerSpawn_Post", .post = true);
 	
 	dr_shop_add_item(
 		.name = "Гравитация", 
@@ -41,23 +44,27 @@ public dr_selected_mode(id, mode)
 	g_iCurMode = mode;
 }
 
-public CSGameRules_RestartRound_Post()
+public CSGameRules_RestartRound_Pre()
 {
 	for(new player = 1; player <= MaxClients; player++)
 	{
-		if(g_bGravity[player])
-		{
-			g_bGravity[player] = false;
-			dr_reset_player_gravity(player);
-		}
+		g_bGravity[player] = false;
+	}
+}
+
+public CSGameRules_PlayerSpawn_Post(const index)
+{
+	if(g_bGravity[index])
+	{
+		set_entvar(index, var_gravity, CUSTOM_GRAVITY);
 	}
 }
 
 // *********** On Buy ***********
-public ShopItem_Gravity(id, &failed_buy)
+public ShopItem_Gravity(id)
 {
-	g_bGravity[id] = dr_set_player_gravity(id, 0.5);
-	failed_buy = !g_bGravity[id];
+	g_bGravity[id] = true;
+	set_entvar(id, var_gravity, CUSTOM_GRAVITY);
 }
 
 // *********** Can Buy ***********

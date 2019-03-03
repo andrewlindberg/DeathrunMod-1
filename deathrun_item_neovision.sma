@@ -20,7 +20,7 @@ public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 	
-	RegisterHookChain(RG_CSGameRules_RestartRound, "CSGameRules_RestartRound_Post", .post = true);
+	RegisterHookChain(RG_CSGameRules_RestartRound, "CSGameRules_RestartRound_Pre", .post = false);
 	
 	register_forward(FM_AddToFullPack, "AddToFullPack_Post", ._post = true);
 	
@@ -52,7 +52,7 @@ public plugin_end()
 	TrieDestroy(g_tClasses);
 }
 
-public CSGameRules_RestartRound_Post()
+public CSGameRules_RestartRound_Pre()
 {
 	for(new player = 1; player <= MaxClients; player++)
 	{

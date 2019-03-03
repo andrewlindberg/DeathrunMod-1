@@ -1,3 +1,4 @@
+// cl_minmodels "0"
 #include <amxmodx>
 #include <reapi>
 #include <deathrun_shop>
@@ -18,7 +19,7 @@ public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 	
-	RegisterHookChain(RG_CSGameRules_RestartRound, "CSGameRules_RestartRound_Post", .post = true);
+	RegisterHookChain(RG_CSGameRules_RestartRound, "CSGameRules_RestartRound_Pre", .post = false);
 	
 	dr_shop_add_item(
 		.name = "Одежда противника", 
@@ -41,7 +42,7 @@ public dr_selected_mode(id, mode)
 	g_iCurMode = mode;
 }
 
-public CSGameRules_RestartRound_Post()
+public CSGameRules_RestartRound_Pre()
 {
 	for(new player = 1; player <= MaxClients; player++)
 	{
@@ -52,11 +53,11 @@ public CSGameRules_RestartRound_Post()
 // *********** On Buy ***********
 public ShopItem_GarmentEnemy(id, &succes_buy)
 {
-	new model[][] = { "gsg9", "terror" };
+	new const model[][] = { "gign", "leet" };
 	new team = _:get_member(id, m_iTeam);
 	
-	g_bGarmentEnemy[id] = rg_set_user_model(id, model[team - 1], true);
-	succes_buy = g_bGarmentEnemy[id];
+	g_bGarmentEnemy[id] = rg_set_user_model(id, model[team - 1]);
+	succes_buy = !g_bGarmentEnemy[id];
 }
 
 // *********** Can Buy ***********

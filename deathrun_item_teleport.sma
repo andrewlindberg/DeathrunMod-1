@@ -12,6 +12,7 @@
 #define DELAY_TELEPORT 8
 
 new g_bTeleport[MAX_PLAYERS + 1];
+new Float: g_fOrigin[MAX_PLAYERS + 1][3];
 
 new g_iModeDuel;
 new g_iCurMode;
@@ -20,7 +21,7 @@ public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 	
-	RegisterHookChain(RG_CSGameRules_RestartRound, "CSGameRules_RestartRound_Post", .post = true);
+	RegisterHookChain(RG_CSGameRules_RestartRound, "CSGameRules_RestartRound_Pre", .post = false);
 	
 	dr_shop_add_item(
 		.name = fmt("Экскурсия (%dс)", DELAY_TELEPORT), 
@@ -43,11 +44,12 @@ public dr_selected_mode(id, mode)
 	g_iCurMode = mode;
 }
 
-public CSGameRules_RestartRound_Post()
+public CSGameRules_RestartRound_Pre()
 {
 	for(new player = 1; player <= MaxClients; player++)
 	{
 		g_bTeleport[player] = false;
+		remove_task(player);
 	}
 }
 
@@ -58,8 +60,8 @@ public ShopItem_Teleport(id)
 	
 	rg_send_bartime(id, DELAY_TELEPORT / 2);
 	
-	new Float:origin[3]; get_entvar(id, var_origin, origin);
-	set_task(DELAY_TELEPORT.0 / 2, "Task_TeleportCt", id, origin);
+	get_entvar(id, var_origin, g_fOrigin[id]);
+	set_task(DELAY_TELEPORT.0 / 2, "Task_TeleportCt", id);
 }
 
 // *********** Can Buy ***********
@@ -87,7 +89,7 @@ public ShopItem_CanBuy_Teleport(id)
 }
 
 // *********** Task ***********
-public Task_TeleportCt(arg[], id) 
+public Task_TeleportCt(id)
 {
 	if(!is_user_alive(id) || !g_bTeleport[id]) return;
 	
@@ -97,12 +99,12 @@ public Task_TeleportCt(arg[], id)
 	set_entvar(id, var_origin, origin);
 	
 	rg_send_bartime(id, DELAY_TELEPORT);
-	set_task(DELAY_TELEPORT.0, "Task_ReturnCt", id, arg);
+	set_task(DELAY_TELEPORT.0, "Task_ReturnCt", id);
 }
 
-public Task_ReturnCt(arg[], id) 
+public Task_ReturnCt(id)
 {
 	if(!is_user_alive(id)) return;
 	
-	set_entvar(id, var_origin, arg);
+	set_entvar(id, var_origin, g_fOrigin[id]);
 }

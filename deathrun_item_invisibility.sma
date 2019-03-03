@@ -21,7 +21,7 @@ public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 	
-	RegisterHookChain(RG_CSGameRules_RestartRound, "CSGameRules_RestartRound_Post", .post = true);
+	RegisterHookChain(RG_CSGameRules_RestartRound, "CSGameRules_RestartRound_Pre", .post = false);
 	
 	dr_shop_add_item(
 		.name = "Невидимость 70%", 
@@ -54,7 +54,7 @@ public dr_selected_mode(id, mode)
 	}
 }
 
-public CSGameRules_RestartRound_Post()
+public CSGameRules_RestartRound_Pre()
 {
 	for(new player = 1; player <= MaxClients; player++)
 	{
@@ -66,9 +66,7 @@ public CSGameRules_RestartRound_Post()
 public ShopItem_Invisibility(id)
 {
 	g_bInvisibility[id] = true;
-	
-	new Float: rgb[3];
-	rg_set_entity_rendering(id, kRenderFxGlowShell, rgb, kRenderTransAdd, 30.0);
+	rg_set_ent_visibility(id, 0);
 }
 
 // *********** Can Buy ***********
@@ -93,4 +91,11 @@ public ShopItem_CanBuy_Invisibility(id)
 	}
 	
 	return ITEM_ENABLED;
+}
+//************** Stock **************//
+stock rg_set_ent_visibility(id, visible = 1)
+{
+	new effects = get_entvar(id, var_effects);
+	set_entvar(id, var_effects, visible == 1 ? effects & ~EF_NODRAW : effects | EF_NODRAW);
+	return 1;
 }
