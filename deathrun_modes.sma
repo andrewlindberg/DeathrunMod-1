@@ -137,7 +137,7 @@ public native_set_mode(plugin, params)
 	
 	new mode_index = get_param(arg_mode_index) - 1;
 	
-	if (mode_index < 0 || mode_index >= g_iModesNum)
+	if(mode_index < 0 || mode_index >= g_iModesNum)
 	{
 		log_error(AMX_ERR_NATIVE, "[DRM] Set mode: wrong mode index! index %d", mode_index + 1);
 		return 0;
@@ -146,13 +146,13 @@ public native_set_mode(plugin, params)
 	g_iCurMode = mode_index;
 	ArrayGetArray(g_aModes, mode_index, g_eCurModeInfo);
 	
-	if (g_eCurModeInfo[m_RoundDelay])
+	if(g_eCurModeInfo[m_RoundDelay])
 	{
 		g_eCurModeInfo[m_CurDelay] = g_eCurModeInfo[m_RoundDelay] + 1;
 		ArraySetArray(g_aModes, mode_index, g_eCurModeInfo);
 	}
 	
-	if (get_param(arg_forward))
+	if(get_param(arg_forward))
 	{
 		ExecuteForward(g_fwSelectedMode, g_fwReturn, get_param(arg_player_id), mode_index + 1);
 	}
@@ -168,7 +168,7 @@ public native_get_mode(plugin, params)
 	
 	new size = get_param(arg_size);
 	
-	if (size > 0)
+	if(size > 0)
 	{
 		set_string(arg_name, g_eCurModeInfo[m_Name], size);
 	}
@@ -190,7 +190,7 @@ public native_get_mode_addinfo(plugin, params)
 	
 	new size = get_param(arg_size);
 	
-	if (size > 0)
+	if(size > 0)
 	{
 		set_string(arg_addition, g_szAdditionalInfo, size);
 	}
@@ -204,7 +204,7 @@ public native_get_mode_by_mark(plugin, params)
 	for (new mode_index, mode_info[ModeData]; mode_index < g_iModesNum; mode_index++)
 	{
 		ArrayGetArray(g_aModes, mode_index, mode_info);
-		if (equali(mark, mode_info[m_Mark]))
+		if(equali(mark, mode_info[m_Mark]))
 		{
 			return mode_index + 1;
 		}
@@ -221,17 +221,15 @@ public native_get_mode_info(plugin, params)
 	
 	new mode_index = get_param(arg_mode_index) - 1;
 	
-	if (mode_index < 0 || mode_index >= g_iModesNum)
+	if(mode_index < 0 || mode_index >= g_iModesNum)
 	{
 		log_error(AMX_ERR_NATIVE, "[DRM] Get mode info: wrong mode index! index %d", mode_index + 1);
 		return 0;
 	}
 	
 	new mode_info[ModeData]; 
-	{
-		ArrayGetArray(g_aModes, mode_index, mode_info);
-		set_array(arg_info, mode_info, ModeData);
-	}
+	ArrayGetArray(g_aModes, mode_index, mode_info);
+	set_array(arg_info, mode_info, ModeData);
 	
 	return 1;
 }
@@ -254,7 +252,7 @@ public native_set_user_bhop(plugin, params)
 	
 	new player = get_param(arg_player_id);
 	
-	if (player < 1 || player > MaxClients)
+	if(player < 1 || player > MaxClients)
 	{
 		log_error(AMX_ERR_NATIVE, "[DRM] Set user bhop: wrong player index! index %d", player);
 		return 0;
@@ -270,7 +268,7 @@ public bool:native_get_user_bhop(id)
 	
 	new player = get_param(arg_player_id);
 	
-	if (player < 1 || player > MaxClients)
+	if(player < 1 || player > MaxClients)
 	{
 		log_error(AMX_ERR_NATIVE, "[DRM] Get user bhop: wrong player index! index %d", player);
 		return false;
@@ -290,7 +288,7 @@ public client_disconnected(id)
 }
 public Command_Bhop(id)
 {
-	if (!g_eCurModeInfo[m_Bhop])
+	if(!g_eCurModeInfo[m_Bhop])
 	{
 		return PLUGIN_CONTINUE;
 	}
@@ -305,14 +303,14 @@ public Command_Bhop(id)
 //***** Ham *****//
 public Ham_UseButtons_Pre(ent, caller, activator, use_type)
 {
-	if (!IsPlayer(activator))
+	if(!IsPlayer(activator))
 	{
 		return HAM_IGNORED;
 	}
 	
 	new TeamName:team = get_member(activator, m_iTeam);
 	
-	if (team == TEAM_TERRORIST && g_eCurModeInfo[m_TT_BlockButtons] || team == TEAM_CT && g_eCurModeInfo[m_CT_BlockButtons])
+	if(team == TEAM_TERRORIST && g_eCurModeInfo[m_TT_BlockButtons] || team == TEAM_CT && g_eCurModeInfo[m_CT_BlockButtons])
 	{
 		return HAM_SUPERCEDE;
 	}
@@ -355,7 +353,7 @@ public CSGameRules_RestartRound_Pre()
 	for (new i = 0; i < g_iModesNum; i++)
 	{
 		ArrayGetArray(g_aModes, i, mode_info);
-		if (mode_info[m_CurDelay])
+		if(mode_info[m_CurDelay])
 		{
 			mode_info[m_CurDelay]--;
 			ArraySetArray(g_aModes, i, mode_info);
@@ -368,14 +366,14 @@ public CSGameRules_RestartRound_Pre()
 }
 public CBasePlayer_HasRestrictItem_Pre(const this, ItemID:item, ItemRestType:type)
 {
-	if (!IsPlayer(this) || g_iCurMode == NONE_MODE)
+	if(!IsPlayer(this) || g_iCurMode == NONE_MODE)
 	{
 		return HC_CONTINUE;
 	}
 	
 	new TeamName:team = get_member(this, m_iTeam);
 	
-	if (team == TEAM_TERRORIST && g_eCurModeInfo[m_TT_BlockWeapon] || team == TEAM_CT && g_eCurModeInfo[m_CT_BlockWeapon])
+	if(team == TEAM_TERRORIST && g_eCurModeInfo[m_TT_BlockWeapon] || team == TEAM_CT && g_eCurModeInfo[m_CT_BlockWeapon])
 	{
 		SetHookChainReturn(ATYPE_INTEGER, 1);
 		return HC_SUPERCEDE;
@@ -385,14 +383,14 @@ public CBasePlayer_HasRestrictItem_Pre(const this, ItemID:item, ItemRestType:typ
 }
 public CBasePlayer_Jump_Pre(const this)
 {	
-	if (!g_eCurModeInfo[m_Bhop] || !g_bBhop[this])
+	if(!g_eCurModeInfo[m_Bhop] || !g_bBhop[this])
 	{
 		return HC_CONTINUE;
 	}
 	
 	new flags = get_entvar(this, var_flags);
 	
-	if (flags & FL_WATERJUMP || !(flags & FL_ONGROUND) || get_entvar(this, var_waterlevel) >= 2)
+	if(flags & FL_WATERJUMP || !(flags & FL_ONGROUND) || get_entvar(this, var_waterlevel) >= 2)
 	{
 		return HC_CONTINUE;
 	}
@@ -407,7 +405,7 @@ public CBasePlayer_Jump_Pre(const this)
 }
 public CBasePlayer_Spawn_Post(const this)
 {
-	if (!is_user_alive(this))
+	if(!is_user_alive(this))
 	{
 		return HC_CONTINUE;
 	}
@@ -417,13 +415,13 @@ public CBasePlayer_Spawn_Post(const this)
 	new TeamName:team = get_member(this, m_iTeam);
 	rg_remove_items_by_slot(this, PISTOL_SLOT);
 	
-	if (g_eCurModeInfo[m_Usp] && team == TEAM_CT)
+	if(g_eCurModeInfo[m_Usp] && team == TEAM_CT)
 	{
 		rg_give_item(this, "weapon_usp");
 		rg_set_user_bpammo(this, WEAPON_USP, 100);
 	}
 	
-	if (g_iCurMode != NONE_MODE || team != TEAM_TERRORIST)
+	if(g_iCurMode != NONE_MODE || team != TEAM_TERRORIST)
 	{
 		return HC_CONTINUE;
 	}
@@ -447,7 +445,7 @@ public Show_ModesMenu(id)
 		if(mode_info[m_Hide]) continue;
 		
 		len = formatex(text, charsmax(text), "%L", id, mode_info[m_Name]);
-		if (mode_info[m_CurDelay] > 0)
+		if(mode_info[m_CurDelay] > 0)
 		{
 			formatex(text[len], charsmax(text) - len, "[\r%d\d]", mode_info[m_CurDelay]);
 		}
@@ -481,7 +479,7 @@ public Show_ModesMenu(id)
 }
 public ModesMenu_Handler(id, menu, item)
 {
-	if (item == MENU_EXIT || g_iCurMode != NONE_MODE || get_member(id, m_iTeam) != CS_TEAM_T)
+	if(item == MENU_EXIT || g_iCurMode != NONE_MODE || get_member(id, m_iTeam) != CS_TEAM_T)
 	{
 		menu_destroy(menu);
 		return PLUGIN_HANDLED;
@@ -495,7 +493,7 @@ public ModesMenu_Handler(id, menu, item)
 	
 	ArrayGetArray(g_aModes, mode, g_eCurModeInfo);
 	
-	if (g_eCurModeInfo[m_RoundDelay])
+	if(g_eCurModeInfo[m_RoundDelay])
 	{
 		g_eCurModeInfo[m_CurDelay] = g_eCurModeInfo[m_RoundDelay] + 1;
 		ArraySetArray(g_aModes, mode, g_eCurModeInfo);
@@ -506,7 +504,7 @@ public ModesMenu_Handler(id, menu, item)
 	remove_task(id + TASK_SHOWMENU);
 	ExecuteForward(g_fwSelectedMode, g_fwReturn, id, mode + 1);
 	
-	if (g_eCurModeInfo[m_Hud][0])
+	if(g_eCurModeInfo[m_Hud][0])
 	{
 		set_dhudmessage(random(200) + 55, random(200) + 55, random(200) + 55, 0.01, 0.50, 0, 0.00, 3.00, 0.20, 3.00);
 		show_dhudmessage(0, "%L^n%L", LANG_PLAYER, "DRM_SELECTED_MODE", LANG_PLAYER, g_eCurModeInfo[m_Name], LANG_PLAYER, g_eCurModeInfo[m_Hud]);
@@ -525,18 +523,18 @@ public Task_MenuTimer(id)
 {
 	id -= TASK_SHOWMENU;
 	
-	if (g_iCurMode != NONE_MODE || !is_user_alive(id) || get_member(id, m_iTeam) != CS_TEAM_T)
+	if(g_iCurMode != NONE_MODE || !is_user_alive(id) || get_member(id, m_iTeam) != CS_TEAM_T)
 	{
 		show_menu(id, 0, "^n"); return;
 	}
 
-	if (--g_iTimer[id] <= 0)
+	if(--g_iTimer[id] <= 0)
 	{
 		show_menu(id, 0, "^n");
 		
 		new mode;
 		
-		if (!is_all_modes_blocked())
+		if(!is_all_modes_blocked())
 		{
 			do {
 				mode = random(g_iModesNum);
@@ -553,7 +551,7 @@ public Task_MenuTimer(id)
 		
 		g_iCurMode = mode;
 		
-		if (g_eCurModeInfo[m_RoundDelay])
+		if(g_eCurModeInfo[m_RoundDelay])
 		{
 			g_eCurModeInfo[m_CurDelay] = g_eCurModeInfo[m_RoundDelay] + 1;
 			ArraySetArray(g_aModes, mode, g_eCurModeInfo);
@@ -563,7 +561,7 @@ public Task_MenuTimer(id)
 		
 		ExecuteForward(g_fwSelectedMode, g_fwReturn, id, mode + 1);
 		
-		if (g_eCurModeInfo[m_Hud][0])
+		if(g_eCurModeInfo[m_Hud][0])
 		{
 			set_dhudmessage(random(200) + 55, random(200) + 55, random(200) + 55, 0.01, 0.50, 0, 0.00, 3.00, 0.20, 3.00);
 			show_dhudmessage(0, "%L^n%L", LANG_PLAYER, "DRM_RANDOM_MODE", LANG_PLAYER, g_eCurModeInfo[m_Name], LANG_PLAYER, g_eCurModeInfo[m_Hud]);
@@ -580,7 +578,7 @@ public Task_MenuTimer(id)
 CheckUsp()
 {
 #if DEFAULT_USP < 1
-	if (g_eCurModeInfo[m_Usp])
+	if(g_eCurModeInfo[m_Usp])
 	{
 		new player, players[32], pnum; get_players(players, pnum, "ae", "CT");
 		for (new i = 0; i < pnum; i++)
@@ -591,7 +589,7 @@ CheckUsp()
 		}
 	}
 #else
-	if (!g_eCurModeInfo[m_Usp])
+	if(!g_eCurModeInfo[m_Usp])
 	{
 		new player, players[32], pnum; get_players(players, pnum, "ae", "CT");
 		for (new i = 0; i < pnum; i++)
@@ -609,7 +607,7 @@ bool:is_all_modes_blocked()
 	for (new i; i < g_iModesNum; i++)
 	{
 		ArrayGetArray(g_aModes, i, mode_info);
-		if (!mode_info[m_CurDelay] && !mode_info[m_Hide]) return false;
+		if(!mode_info[m_CurDelay] && !mode_info[m_Hide]) return false;
 	}
 	return true;
 }

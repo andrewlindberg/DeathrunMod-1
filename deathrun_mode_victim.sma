@@ -42,7 +42,9 @@ public dr_selected_mode(id, mode)
 	{
 		new players[32], pnum; get_players(players, pnum, "ae", "CT");
 		
-		new Float: health_multiplier = HEALTH_START.0 * pnum;
+		new Float: health_multiplier = HEALTH_START.0;
+		if(pnum) health_multiplier *= pnum;
+		
 		set_entvar(id, var_health, health_multiplier);
 		
 		for(new i = 0, player; i < pnum; i++)

@@ -56,7 +56,7 @@ public CBasePlayer_Spawn_Post(const this)
 	{
 		if(is_user_alive(this) && get_member(this, m_iTeam) == TEAM_TERRORIST)
 		{
-			set_invisibility(this);
+			rg_set_ent_visibility(this, 0);
 		}
 	}
 }
@@ -80,20 +80,24 @@ public dr_selected_mode(id, mode)
 	{
 		set_cvar_num("mp_forcechasecam", 0);
 		set_cvar_num("mp_forcecamera", 0);
+		
+		rg_set_ent_visibility(id);
 	}
 	
 	g_iCurMode = mode;
 	
 	if(mode == g_iModeInvis)
 	{
-		set_invisibility(id);
-		
 		set_cvar_num("mp_forcechasecam", 2);
 		set_cvar_num("mp_forcecamera", 0);
+		
+		rg_set_ent_visibility(id, 0);
 	}
 }
-set_invisibility(id)
+//************** Stock **************//
+stock rg_set_ent_visibility(id, visible = 1)
 {
-	new Float: rgb[3];
-	rg_set_entity_rendering(id, kRenderFxGlowShell, rgb, kRenderTransAlpha, 0.0);
+	new effects = get_entvar(id, var_effects);
+	set_entvar(id, var_effects, visible == 1 ? effects & ~EF_NODRAW : effects | EF_NODRAW);
+	return 1;
 }

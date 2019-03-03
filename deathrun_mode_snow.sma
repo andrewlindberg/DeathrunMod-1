@@ -53,7 +53,7 @@ new const BALL_MODEL_V[] = "models/royal/mode/snowball/v_asbowball.mdl";
 new const BALL_MODEL_P[] = "models/royal/mode/snowball/p_snowball.mdl";
 
 new Float:HIT_MUL[9] = {
-	0.0, // generic
+	0.1, // generic
 	3.0, // head
 	1.2, // chest
 	1.1, // stomach
@@ -292,12 +292,12 @@ SnowBallTakeDamage(snowball, player)
 	new owner = get_entvar(snowball, var_owner);
 	if(is_user_connected(owner))
 	{
-		if(is_user_alive(player) && get_member(player, m_iTeam) != get_member(owner, m_iTeam))
+		new hit_zone = get_hit_zone(player, snowball);
+		if(HitBoxGroup:hit_zone < HITGROUP_SHIELD && is_user_alive(player) && get_member(player, m_iTeam) != get_member(owner, m_iTeam))
 		{
-			new hit_zone = get_hit_zone(player, snowball);
 			set_member(player, m_LastHitGroup, hit_zone);
 			
-			ExecuteHamB(Ham_TakeDamage, player, snowball, owner, SNOWBALL_DAMAGE * HIT_MUL[hit_zone], 0);
+			ExecuteHamB(Ham_TakeDamage, player, snowball, owner, SNOWBALL_DAMAGE * HIT_MUL[hit_zone], DMG_DROWN);
 			set_entvar(snowball, var_flags, get_entvar(snowball, var_flags) | FL_KILLME);
 			return 1;
 		}
@@ -365,14 +365,11 @@ public ShouldCollide_Pre(ent, toucher)
 		new ent_classname[32]; get_entvar(ent, var_classname , ent_classname, charsmax(ent_classname));
 		if(equal(ent_classname, "func_wall"))
 		{
-			new Float:FXAmount = Float:get_entvar(ent, var_renderamt);
-			if(FXAmount < 200.0)
-			{
-				forward_return(FMV_CELL, 0); 
-				return FMRES_SUPERCEDE;
-			}
+			forward_return(FMV_CELL, 0); 
+			return FMRES_SUPERCEDE;
 		}
 	}
+	
 	return FMRES_IGNORED;
 }
 #endif // CAN_FLY_THROUGH_THE_WALLS

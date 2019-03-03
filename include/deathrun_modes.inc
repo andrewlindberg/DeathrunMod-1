@@ -190,7 +190,7 @@ native dr_reset_player_multihop(id);
  * @param value				Max speed value.
  * @param multiplier		Multiplier.
  */
-native dr_set_player_maxspeed(id, Float: value, bool: multiplier = false);
+native dr_set_player_maxspeed(id, Float: value, multiplier = false);
 
 /**
  * Reset maxspeed.
