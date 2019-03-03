@@ -51,7 +51,7 @@ public plugin_natives()
 	register_native("dr_reset_player_gravity", "@native_reset_player_gravity");
 }
 
-@native_set_player_maxspeed(plugin_id, argc)
+@native_set_player_gravity(plugin_id, argc)
 {
 	enum { arg_player_id = 1, arg_gravity };
 	
@@ -107,6 +107,8 @@ public plugin_natives()
 	
 	new player = get_member(weapon, m_pPlayer);
 	
+	if(!is_user_alive(player)) return HAM_IGNORED;
+	
 	if(BIT_NOT_VALID(g_iBitConnected, player)) return HAM_IGNORED;
 	
 	if(BIT_VALID(g_iHasCustomGravity, player))
@@ -131,7 +133,7 @@ public client_remove(player)
 executeItemDeploy(player)
 {
 	new iActiveItem = get_member(player, m_pActiveItem);
-	if(iActiveItem > 0)
+	if(!is_nullent(iActiveItem) && iActiveItem > 0)
 	{
 		ExecuteHamB(Ham_Item_Deploy, iActiveItem);
 	}
