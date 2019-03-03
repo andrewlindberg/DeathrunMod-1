@@ -25,7 +25,7 @@ new HookChain: g_hResetMaxSpeed;
 public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
-	g_hResetMaxSpeed = RegisterHookChain(RG_CBasePlayer_ResetMaxSpeed, "@CBasePlayer_ResetMaxSpeed_Post", 1);
+	g_hResetMaxSpeed = RegisterHookChain(RG_CBasePlayer_ResetMaxSpeed, "@CBasePlayer_ResetMaxSpeed_Post", .post = true);
 }
 
 public plugin_cfg()
@@ -71,18 +71,18 @@ public plugin_natives()
 		return false;
 	}
 	
-	new Float: fMaxSpeed = get_param_f(arg_maxspeed);
+	new Float: flMaxSpeed = get_param_f(arg_maxspeed);
 	
-	if(fMaxSpeed < 0.0)
+	if(flMaxSpeed < 0.0)
 	{
-		log_error(AMX_ERR_NATIVE, "[CS] Invalid maxspeed value %.2f", fMaxSpeed);
+		log_error(AMX_ERR_NATIVE, "[CS] Invalid maxspeed value %.2f", flMaxSpeed);
 		return false;
 	}
 	
 	new iMultiplier = get_param(arg_multiplier);
 	
 	BIT_ADD(g_iHasCustomMaxSpeed, player);
-	g_fCustomMaxSpeed[player] = fMaxSpeed;
+	g_fCustomMaxSpeed[player] = flMaxSpeed;
 	
 	if(iMultiplier)
 	{
@@ -125,35 +125,32 @@ public plugin_natives()
 @CBasePlayer_ResetMaxSpeed_Post(const this)
 {
 	// is_user_alive is used to prevent the bug that occurs when using the bit sum
-	if(!is_user_alive(this)) return HC_CONTINUE;
+	if(!is_user_alive(this))
+		return HC_CONTINUE;
 	
-	if(BIT_NOT_VALID(g_iHasCustomMaxSpeed, this) && get_member(this, m_iTeam) != TEAM_TERRORIST) return HC_CONTINUE;
+	if(get_member(this, m_iTeam) == TEAM_TERRORIST)
+		set_entvar(this, var_maxspeed, DEFAULT_MAXSPEED_T.0);
 	
-	if(BIT_VALID(g_iHasCustomMaxSpeed, this))
-	{
-		if(BIT_VALID(g_iMaxSpeedIsMultiplier, this))
-		{
-			new Float:fMaxSpeed = get_entvar(this, var_maxspeed);
-			
-			g_fCustomMaxSpeed[this] *= fMaxSpeed;
-		}
-	}
+	if(BIT_NOT_VALID(g_iHasCustomMaxSpeed, this))
+		return HC_CONTINUE;
+	
+	new Float: flMaxSpeed = get_entvar(this, var_maxspeed);
+	
+	if(BIT_VALID(g_iMaxSpeedIsMultiplier, this))
+		set_entvar(this, var_maxspeed, flMaxSpeed * g_fCustomMaxSpeed[this]);
 	else
-	{
-		g_fCustomMaxSpeed[this] = DEFAULT_MAXSPEED_T.0;
-	}
+		set_entvar(this, var_maxspeed, g_fCustomMaxSpeed[this]);
 	
-	set_entvar(this, var_maxspeed, g_fCustomMaxSpeed[this]);
-	return HC_SUPERCEDE;
+	return HC_CONTINUE;
 }
 
 public client_putinserver(player)
 {
 	BIT_ADD(g_iBitConnected, player);
 	
-	/* query_client_cvar(player, "cl_forwardspeed", "@maxspeed_cvar_callback");
+	query_client_cvar(player, "cl_forwardspeed", "@maxspeed_cvar_callback");
 	query_client_cvar(player, "cl_sidespeed", "@maxspeed_cvar_callback");
-	query_client_cvar(player, "cl_backspeed", "@maxspeed_cvar_callback"); */
+	query_client_cvar(player, "cl_backspeed", "@maxspeed_cvar_callback");
 }
 
 public client_remove(player)
@@ -162,7 +159,7 @@ public client_remove(player)
 	BIT_SUB(g_iBitConnected, player);
 }
 
-/* @maxspeed_cvar_callback(id, const cvar[], const value[], const param[])
+@maxspeed_cvar_callback(id, const cvar[], const value[], const param[])
 {
 	new iValue = str_to_num(value);
 	if(iValue < DEFAULT_MAXSPEED_CVAR)
@@ -172,4 +169,4 @@ public client_remove(player)
 		client_print(id, print_console, "Для коректной работы прироста к скорости бега");
 		client_print(id, print_console, "изменено значение квара %s ^"%d^" на ^"%d^"!", cvar, iValue, DEFAULT_MAXSPEED_CVAR);
 	}
-} */
+}

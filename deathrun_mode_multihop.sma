@@ -116,16 +116,15 @@ public plugin_natives()
 		if(get_entvar(this, var_flags) & FL_ONGROUND)
 		{
 			g_iMultiHop[this][HType_Amount] = 0;
+			return HC_CONTINUE;
 		}
-		else
-		if((~get_member(this, m_afButtonLast) & IN_JUMP) && g_iMultiHop[this][HType_Amount] < g_iMultiHop[this][HType_Max])
+		
+		if((~get_member(this, m_afButtonLast) & IN_JUMP) && ++g_iMultiHop[this][HType_Amount] < g_iMultiHop[this][HType_Max])
 		{
-			static Float:velocity[3]; 
+			static Float:velocity[3];
 			get_entvar(this, var_velocity, velocity);
-			velocity[2] = random_float(265.0, 285.0); 
+			velocity[2] = random_float(265.0, 285.0);
 			set_entvar(this, var_velocity, velocity);
-			
-			g_iMultiHop[this][HType_Amount]++;
 		}
 	}
 	
